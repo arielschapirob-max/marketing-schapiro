@@ -19,6 +19,8 @@ Aplicación local (Streamlit + SQLite) para apoyar el análisis jurídico-técni
 - Tesseract OCR (para PDF escaneados e imágenes)
 - Poppler (usado por `pdf2image` para convertir PDF a imágenes antes del OCR)
 
+La propuesta comercial en PDF se genera con **ReportLab**, que no depende de ningún programa externo y funciona igual en macOS, Windows y Linux. `docx2pdf` está incluido en `requirements.txt` como alternativa opcional si prefiere convertir el DOCX de la propuesta usando Microsoft Word (Windows/macOS) o LibreOffice; no es necesario para el funcionamiento por defecto de la aplicación.
+
 ## Instalación
 
 ### macOS

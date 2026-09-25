@@ -6,8 +6,8 @@ interno y la propuesta comercial.
 
 import types
 
+import pymupdf
 from docx import Document as DocxDocument
-from pypdf import PdfReader
 
 from app.reports.commercial_proposal_docx import generar_propuesta_docx
 from app.reports.commercial_proposal_pdf import generar_propuesta_pdf
@@ -58,12 +58,14 @@ def test_propuesta_pdf_no_filtra_metodologia_y_respeta_dos_paginas(tmp_path):
     ruta = tmp_path / "propuesta.pdf"
     generar_propuesta_pdf(_caso_falso(), _honorarios(honorario_exito=False, honorario_exito_texto=""), str(ruta))
 
-    lector = PdfReader(str(ruta))
-    texto = "\n".join(pagina.extract_text() or "" for pagina in lector.pages).lower()
+    documento_pdf = pymupdf.open(str(ruta))
+    texto = "\n".join(pagina.get_text() for pagina in documento_pdf).lower()
+    n_paginas = documento_pdf.page_count
+    documento_pdf.close()
 
     for termino in TERMINOS_PROHIBIDOS:
         assert termino.lower() not in texto
-    assert len(lector.pages) <= 2
+    assert n_paginas <= 2
 
 
 def test_propuesta_incluye_frase_obligatoria_y_ausencia_de_garantia(tmp_path):

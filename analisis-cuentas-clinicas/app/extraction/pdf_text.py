@@ -1,11 +1,11 @@
 """Extracción de texto desde PDF con capa de texto, usando PyMuPDF."""
 
-import fitz
+import pymupdf
 
 
 def extraer_texto_pdf(ruta: str) -> tuple[str, bool]:
     """Retorna (texto_completo, tiene_texto). ``tiene_texto`` es False si el PDF parece escaneado."""
-    documento = fitz.open(ruta)
+    documento = pymupdf.open(ruta)
     fragmentos = []
     tiene_texto = False
     try:
