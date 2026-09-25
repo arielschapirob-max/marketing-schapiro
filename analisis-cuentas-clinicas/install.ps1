@@ -24,4 +24,4 @@ Write-Host "Instale Tesseract OCR y Poppler para Windows y configure TESSERACT_C
 Write-Host ""
 Write-Host "Para iniciar la aplicación ejecute:"
 Write-Host "  .\.venv\Scripts\Activate.ps1"
-Write-Host "  streamlit run app/ui/Inicio.py"
+Write-Host "  streamlit run app.py"

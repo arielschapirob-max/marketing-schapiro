@@ -30,4 +30,4 @@ echo "  Linux:  sudo apt-get install tesseract-ocr tesseract-ocr-spa poppler-uti
 echo ""
 echo "Para iniciar la aplicación ejecute:"
 echo "  source .venv/bin/activate"
-echo "  streamlit run app/ui/Inicio.py"
+echo "  streamlit run app.py"

@@ -18,4 +18,4 @@ RUN mkdir -p data/casos
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "app/ui/Inicio.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

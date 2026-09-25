@@ -72,7 +72,7 @@ La aplicación queda disponible en `http://localhost:8501`.
 source .venv/bin/activate        # macOS/Linux
 # .\.venv\Scripts\Activate.ps1   # Windows
 
-streamlit run app/ui/Inicio.py
+streamlit run app.py
 ```
 
 Abra el navegador en `http://localhost:8501`.
@@ -113,19 +113,20 @@ Los archivos se guardan en `data/muestras/` (excluida de git).
 ## Estructura del proyecto
 
 ```
+app.py                        Punto de entrada de Streamlit (ejecutar con: streamlit run app.py)
+pages/                        Páginas del flujo: Cargar Caso, Revisión Manual, Hallazgos, Informes, Configuración
 app/
-  config.py                  Configuración vía variables de entorno
-  db/                        Modelos SQLAlchemy y sesión de base de datos
-  schemas/                   Validaciones Pydantic
-  extraction/                Extracción (PDF/OCR/DOCX/XLSX), normalización RUT/montos, estructuración de ítems
-  analysis/                  Motor de hallazgos, dispositivos médicos, aritmética, duplicados
-  reports/                   Generadores de informe interno y propuesta comercial (DOCX/XLSX/PDF)
-  security/                  Enmascarado de RUT y registro de auditoría
-  utils/                     Almacenamiento de archivos por caso
-  ui/                        Aplicación Streamlit (Inicio.py + pages/)
+  config.py                   Configuración vía variables de entorno
+  db/                         Modelos SQLAlchemy y sesión de base de datos
+  schemas/                    Validaciones Pydantic
+  extraction/                 Extracción (PDF/OCR/DOCX/XLSX), normalización RUT/montos, estructuración de ítems
+  analysis/                   Motor de hallazgos, dispositivos médicos, aritmética, duplicados
+  reports/                    Generadores de informe interno y propuesta comercial (DOCX/XLSX/PDF)
+  security/                   Enmascarado de RUT y registro de auditoría
+  utils/                      Almacenamiento de archivos por caso
 scripts/
-  generar_datos_muestra.py   Genera documentos ficticios de prueba
-tests/                       Pruebas unitarias (pytest)
+  generar_datos_muestra.py    Genera documentos ficticios de prueba
+tests/                        Pruebas unitarias (pytest)
 ```
 
 ## Pruebas
