@@ -25,19 +25,54 @@ La propuesta comercial en PDF se genera con **ReportLab**, que no depende de nin
 
 ### macOS
 
+Instale Python 3.12 (por ejemplo con Homebrew: `brew install python@3.12`). Luego:
+
+```bash
+mkdir analisis-cuentas-clinicas
+cd analisis-cuentas-clinicas
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+brew install tesseract tesseract-lang poppler
+pip install --upgrade pip
+pip install -r requirements.txt
+
+streamlit run app.py
+```
+
+**Alternativa:** ejecute el script de instalación, que además crea `.env` a partir de `.env.example`:
+
 ```bash
 brew install python@3.12 tesseract tesseract-lang poppler
-cd analisis-cuentas-clinicas
 chmod +x install.sh
 ./install.sh
 ```
 
 ### Linux (Debian/Ubuntu)
 
+Asegúrese de tener Python 3.12 disponible (`sudo apt install python3.12 python3.12-venv` si su distribución no lo trae por defecto). Luego:
+
+```bash
+mkdir analisis-cuentas-clinicas
+cd analisis-cuentas-clinicas
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+sudo apt update
+sudo apt install -y tesseract-ocr tesseract-ocr-spa poppler-utils
+pip install --upgrade pip
+pip install -r requirements.txt
+
+streamlit run app.py
+```
+
+**Alternativa:** ejecute el script de instalación, que además crea `.env` a partir de `.env.example`:
+
 ```bash
 sudo apt-get update
 sudo apt-get install -y python3.12 python3.12-venv tesseract-ocr tesseract-ocr-spa poppler-utils
-cd analisis-cuentas-clinicas
 chmod +x install.sh
 ./install.sh
 ```
