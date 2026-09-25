@@ -12,6 +12,8 @@ from pathlib import Path
 
 import docx
 import openpyxl
+import pymupdf
+from PIL import Image, ImageDraw, ImageFont
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
@@ -19,6 +21,21 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 DESTINO = Path(__file__).resolve().parent.parent / "samples"
 DESTINO.mkdir(parents=True, exist_ok=True)
+
+ENCABEZADO_MUESTRA = [
+    "Fecha de emisión: 15-03-2026",
+    "Afiliado: Paciente de Prueba Ficticio Dos",
+    "RUT: 22.222.222-2",
+    "Isapre: Isapre Consalud",
+    "Prestador: Hospital Clínico Ejemplo",
+    "Número de cuenta: CTA-2026-0099",
+    "Diagnóstico: Síndrome coronario agudo, diagnóstico ficticio de prueba",
+]
+ITEMS_MUESTRA = [
+    "220305 Stent coronario liberador de fármaco $3.200.000 $1.800.000 $1.400.000",
+    "340210 Insumo clínico no bonificable, valor cobrado $850.000, sin cobertura",
+    "110101 Consulta médica especialidad $45.000 $45.000",
+]
 
 
 def generar_xlsx_muestra() -> Path:
@@ -100,37 +117,77 @@ def generar_pdf_muestra() -> Path:
     normal = estilos["Normal"]
     titulo = estilos["Heading1"]
 
-    encabezado = [
-        "Fecha de emisión: 15-03-2026",
-        "Afiliado: Paciente de Prueba Ficticio Dos",
-        "RUT: 22.222.222-2",
-        "Isapre: Isapre Consalud",
-        "Prestador: Hospital Clínico Ejemplo",
-        "Número de cuenta: CTA-2026-0099",
-        "Diagnóstico: Síndrome coronario agudo, diagnóstico ficticio de prueba",
-    ]
-    items = [
-        "220305 Stent coronario liberador de fármaco $3.200.000 $1.800.000 $1.400.000",
-        "340210 Insumo clínico no bonificable, valor cobrado $850.000, sin cobertura",
-        "110101 Consulta médica especialidad $45.000 $45.000",
-    ]
-
     elementos = [Paragraph("Cuenta Clínica (documento ficticio de prueba)", titulo)]
-    for linea in encabezado:
+    for linea in ENCABEZADO_MUESTRA:
         elementos.append(Paragraph(linea, normal))
     elementos.append(Spacer(1, 0.4 * cm))
-    for linea in items:
+    for linea in ITEMS_MUESTRA:
         elementos.append(Paragraph(linea, normal))
 
     doc.build(elementos)
     return ruta
 
 
+def _renderizar_imagen_cuenta() -> Image.Image:
+    """Dibuja la misma cuenta clínica ficticia como imagen, para probar el
+    camino de OCR (pytesseract) en vez de extracción de texto nativo.
+    """
+    ancho, alto = 1700, 2200  # aprox. carta a 200 DPI
+    imagen = Image.new("RGB", (ancho, alto), "white")
+    dibujo = ImageDraw.Draw(imagen)
+
+    fuente_titulo = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)
+    fuente_texto = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 28)
+
+    y = 80
+    dibujo.text((80, y), "Cuenta Clínica (documento ficticio de prueba)", font=fuente_titulo, fill="black")
+    y += 70
+    for linea in ENCABEZADO_MUESTRA:
+        dibujo.text((80, y), linea, font=fuente_texto, fill="black")
+        y += 48
+    y += 30
+    for linea in ITEMS_MUESTRA:
+        dibujo.text((80, y), linea, font=fuente_texto, fill="black")
+        y += 48
+
+    return imagen
+
+
+def generar_imagen_muestra() -> Path:
+    """Genera la cuenta clínica ficticia como imagen PNG (mismo contenido que
+    el PDF con texto), para probar la extracción vía OCR con pytesseract.
+    """
+    ruta = DESTINO / "cuenta_clinica_ficticia.png"
+    _renderizar_imagen_cuenta().save(ruta)
+    return ruta
+
+
+def generar_pdf_escaneado_muestra() -> Path:
+    """Genera un PDF 'escaneado' (imagen incrustada, sin capa de texto),
+    para probar la rama de OCR del extractor de PDF (a diferencia de
+    generar_pdf_muestra, que produce un PDF con texto real).
+    """
+    ruta_imagen_temporal = DESTINO / "_temp_escaneo.png"
+    _renderizar_imagen_cuenta().save(ruta_imagen_temporal)
+
+    ruta = DESTINO / "cuenta_clinica_escaneada_ficticia.pdf"
+    documento = pymupdf.open()
+    pagina = documento.new_page(width=612, height=792)  # tamaño carta en puntos
+    pagina.insert_image(pagina.rect, filename=str(ruta_imagen_temporal))
+    documento.save(str(ruta))
+    documento.close()
+    ruta_imagen_temporal.unlink()
+    return ruta
+
+
 if __name__ == "__main__":
-    ruta_xlsx = generar_xlsx_muestra()
-    ruta_docx = generar_docx_muestra()
-    ruta_pdf = generar_pdf_muestra()
-    print(f"Generado: {ruta_xlsx}")
-    print(f"Generado: {ruta_docx}")
-    print(f"Generado: {ruta_pdf}")
+    rutas = [
+        generar_xlsx_muestra(),
+        generar_docx_muestra(),
+        generar_pdf_muestra(),
+        generar_imagen_muestra(),
+        generar_pdf_escaneado_muestra(),
+    ]
+    for ruta in rutas:
+        print(f"Generado: {ruta}")
     print("\nRecuerde: estos son datos ficticios de prueba. Nunca cargue datos reales en el repositorio.")

@@ -141,11 +141,19 @@ Desde la página de **Inicio** también puede **eliminar por completo un caso**,
 
 ## Datos de prueba (ficticios)
 
-Nunca cargue datos reales en el repositorio. Para generar documentos ficticios de prueba (una liquidación XLSX y una cuenta clínica DOCX con datos inventados, incluyendo un ítem de stent coronario para probar la regla de dispositivos médicos):
+Nunca cargue datos reales en el repositorio. Para generar documentos ficticios de prueba, con datos inventados e incluyendo siempre un ítem de stent coronario con cobertura parcial (para probar la regla de dispositivos médicos) y un ítem 100% no cubierto:
 
 ```bash
 python scripts/generar_datos_muestra.py
 ```
+
+Genera una cuenta clínica ficticia en los 5 formatos soportados por la aplicación:
+
+- `liquidacion_isapre_ficticia.xlsx`
+- `cuenta_clinica_ficticia.docx`
+- `cuenta_clinica_ficticia.pdf` (con texto real, sin OCR)
+- `cuenta_clinica_ficticia.png` (imagen, requiere OCR)
+- `cuenta_clinica_escaneada_ficticia.pdf` (PDF sin capa de texto, requiere OCR)
 
 Los archivos se guardan en `samples/` (excluida de git).
 
