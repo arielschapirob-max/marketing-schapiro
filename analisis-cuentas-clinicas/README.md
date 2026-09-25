@@ -144,16 +144,33 @@ Nunca cargue datos reales en el repositorio. Para generar documentos ficticios d
 python scripts/generar_datos_muestra.py
 ```
 
-Los archivos se guardan en `data/muestras/` (excluida de git).
+Los archivos se guardan en `samples/` (excluida de git).
+
+## Variables de entorno
+
+Ver `.env.example` para la lista completa con valores por defecto. Las más relevantes:
+
+| Variable | Uso |
+|---|---|
+| `APP_NAME` | Nombre mostrado en el título de la aplicación y la pestaña del navegador. |
+| `APP_ENV` | `development` muestra un indicador "Modo desarrollo" en la barra lateral; cualquier otro valor lo oculta. |
+| `DATABASE_URL` | Cadena de conexión de la base de datos (SQLite local por defecto). |
+| `OUTPUT_DIRECTORY` | Carpeta donde se guardan los documentos cargados y los informes generados por caso. |
+| `TESSERACT_LANG` | Idioma usado por Tesseract para el OCR (`spa` por defecto). |
+| `MAX_FILE_SIZE_MB` | Tamaño máximo por archivo cargado; los archivos que lo superan se rechazan antes de procesarse. |
+| `ENABLE_EXTERNAL_AI` | Documenta la intención de usar IA externa; la aplicación no incorpora integraciones automáticas hacia terceros aunque esté en `true`. |
+| `CURRENT_USER` | Usuario que queda registrado en el historial de accesos y cambios. |
+| `TESSERACT_CMD` / `POPPLER_PATH` | Rutas explícitas a los ejecutables, solo si no están en el PATH del sistema. |
 
 ## Seguridad y datos personales
 
 - Procesamiento **100% local**: no se envían documentos a servicios externos por defecto.
-- El uso de APIs de IA externas requiere activar explícitamente `PERMITIR_IA_EXTERNA=true` en `.env`; aun así, la aplicación no incorpora integraciones automáticas hacia terceros — esa variable solo documenta la intención de uso y debe respaldarse con autorización expresa caso a caso.
+- El uso de APIs de IA externas requiere activar explícitamente `ENABLE_EXTERNAL_AI=true` en `.env`; aun así, la aplicación no incorpora integraciones automáticas hacia terceros — esa variable solo documenta la intención de uso y debe respaldarse con autorización expresa caso a caso.
 - Aviso de datos sensibles y consentimiento explícito antes de crear cada caso.
 - El RUT del afiliado se **enmascara** en las vistas de listado (ej. `Inicio`); el dato completo permanece disponible para el trabajo jurídico del abogado en la base de datos local y en el informe interno.
 - Registro de acceso (`RegistroAcceso`) y de cambios (`RegistroCambio`) por caso, visibles en la página de Configuración y auditoría.
 - Botón para eliminar completamente un caso y todos sus archivos asociados.
+- Límite configurable de tamaño por archivo cargado (`MAX_FILE_SIZE_MB`).
 - Configuración sensible (rutas de OCR, URL de base de datos, usuario activo) se maneja mediante variables de entorno (`.env`, ver `.env.example`).
 
 ## Estructura del proyecto

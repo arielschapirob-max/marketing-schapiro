@@ -15,7 +15,7 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-mkdir -p data/casos
+mkdir -p storage output
 
 if [ ! -f .env ]; then
     cp .env.example .env

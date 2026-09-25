@@ -62,7 +62,7 @@ with st.form("nuevo_caso"):
             )
             session.add(caso)
             session.commit()
-            registrar_acceso(session, caso.id, settings.usuario_actual, "creacion_caso")
+            registrar_acceso(session, caso.id, settings.current_user, "creacion_caso")
             st.success(f"Caso creado: {caso.nombre_cliente} (ID {caso.id})")
             st.rerun()
 

@@ -109,7 +109,7 @@ if st.button("Guardar cambios"):
                     campo,
                     valor_actual,
                     valor_nuevo_normalizado,
-                    settings.usuario_actual,
+                    settings.current_user,
                 )
                 setattr(item, campo, valor_nuevo_normalizado)
                 item.editado_manualmente = True
@@ -118,7 +118,7 @@ if st.button("Guardar cambios"):
     registrar_acceso(
         session,
         caso.id,
-        settings.usuario_actual,
+        settings.current_user,
         "revision_manual",
         detalle=f"{cambios_totales} cambio(s)",
     )
@@ -130,7 +130,7 @@ if st.button("Aprobar revisión del abogado para este caso"):
     caso.aprobado_por_abogado = True
     caso.fecha_aprobacion = datetime.utcnow()
     session.commit()
-    registrar_acceso(session, caso.id, settings.usuario_actual, "aprobacion_abogado")
+    registrar_acceso(session, caso.id, settings.current_user, "aprobacion_abogado")
     st.success("Revisión aprobada por el abogado responsable.")
 
 session.close()

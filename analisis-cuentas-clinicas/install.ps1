@@ -16,7 +16,8 @@ if (Get-Command py -ErrorAction SilentlyContinue) {
 pip install --upgrade pip
 pip install -r requirements.txt
 
-New-Item -ItemType Directory -Force -Path "data\casos" | Out-Null
+New-Item -ItemType Directory -Force -Path "storage" | Out-Null
+New-Item -ItemType Directory -Force -Path "output" | Out-Null
 
 if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"

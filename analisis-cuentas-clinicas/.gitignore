@@ -1,9 +1,9 @@
 .venv/
 __pycache__/
 *.pyc
-data/app.db
-data/casos/
-data/muestras/
+storage/
+output/
+samples/
 .env
 *.egg-info/
 .pytest_cache/

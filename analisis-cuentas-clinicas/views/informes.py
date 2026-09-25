@@ -33,7 +33,7 @@ historial = (
     session.query(RegistroCambio).filter(RegistroCambio.caso_id == caso.id).order_by(RegistroCambio.fecha).all()
 )
 
-carpeta_salida = settings.storage_dir / str(caso.id) / "informes"
+carpeta_salida = settings.output_dir / str(caso.id) / "informes"
 carpeta_salida.mkdir(parents=True, exist_ok=True)
 
 tab_interno, tab_comercial = st.tabs(["Informe interno (confidencial)", "Propuesta comercial"])
@@ -53,7 +53,7 @@ with tab_interno:
         ruta_xlsx = carpeta_salida / f"informe_interno_{caso.id}.xlsx"
         generar_informe_interno_docx(caso, items, hallazgos, historial, str(ruta_docx))
         generar_informe_interno_xlsx(caso, items, hallazgos, historial, str(ruta_xlsx))
-        registrar_acceso(session, caso.id, settings.usuario_actual, "generacion_informe_interno")
+        registrar_acceso(session, caso.id, settings.current_user, "generacion_informe_interno")
         st.success("Informe interno generado.")
         st.session_state["ruta_informe_docx"] = str(ruta_docx)
         st.session_state["ruta_informe_xlsx"] = str(ruta_xlsx)
@@ -103,7 +103,7 @@ with tab_comercial:
         ruta_pdf = carpeta_salida / f"propuesta_comercial_{caso.id}.pdf"
         generar_propuesta_docx(caso, honorarios, str(ruta_docx), vigencia_dias)
         generar_propuesta_pdf(caso, honorarios, str(ruta_pdf), vigencia_dias)
-        registrar_acceso(session, caso.id, settings.usuario_actual, "generacion_propuesta_comercial")
+        registrar_acceso(session, caso.id, settings.current_user, "generacion_propuesta_comercial")
         st.success("Propuesta comercial generada.")
         st.session_state["ruta_propuesta_docx"] = str(ruta_docx)
         st.session_state["ruta_propuesta_pdf"] = str(ruta_pdf)

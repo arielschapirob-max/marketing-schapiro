@@ -13,7 +13,7 @@ from pathlib import Path
 import docx
 import openpyxl
 
-DESTINO = Path(__file__).resolve().parent.parent / "data" / "muestras"
+DESTINO = Path(__file__).resolve().parent.parent / "samples"
 DESTINO.mkdir(parents=True, exist_ok=True)
 
 

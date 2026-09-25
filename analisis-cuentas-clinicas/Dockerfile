@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p data/casos
+RUN mkdir -p storage output
 
 EXPOSE 8501
 

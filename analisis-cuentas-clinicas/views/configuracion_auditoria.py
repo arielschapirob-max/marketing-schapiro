@@ -12,12 +12,16 @@ from app.db.models import Caso, RegistroAcceso
 st.title("Configuración y auditoría")
 
 st.subheader("Configuración de entorno")
+st.write(f"Nombre de la aplicación: `{settings.app_name}`")
+st.write(f"Entorno: `{settings.app_env}`")
 st.write(f"Base de datos: `{settings.database_url}`")
-st.write(f"Carpeta de almacenamiento: `{settings.storage_dir}`")
-st.write(f"Uso de IA externa habilitado: **{'Sí' if settings.permitir_ia_externa else 'No'}**")
-if settings.permitir_ia_externa:
+st.write(f"Carpeta de salida (documentos e informes por caso): `{settings.output_dir}`")
+st.write(f"Idioma de OCR (Tesseract): `{settings.tesseract_lang}`")
+st.write(f"Tamaño máximo por archivo cargado: {settings.max_file_size_mb} MB")
+st.write(f"Uso de IA externa habilitado: **{'Sí' if settings.enable_external_ai else 'No'}**")
+if settings.enable_external_ai:
     st.warning(
-        "El uso de servicios de IA externos está habilitado por configuración (PERMITIR_IA_EXTERNA=true). "
+        "El uso de servicios de IA externos está habilitado por configuración (ENABLE_EXTERNAL_AI=true). "
         "Verifique que exista autorización expresa antes de enviar cualquier documento a un servicio de terceros. "
         "La aplicación, por diseño, no envía documentos a servicios externos de forma automática."
     )

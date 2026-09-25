@@ -10,9 +10,10 @@ from app.db.database import get_session
 from app.db.models import Caso, Documento, ItemCuenta
 from app.extraction.pipeline import procesar_documento
 from app.security.audit import registrar_acceso
-from app.utils.file_storage import guardar_archivo_caso
+from app.utils.file_storage import excede_tamano_maximo, guardar_archivo_caso
 
 st.title("Cargar documentos del caso")
+st.caption(f"Tamaño máximo por archivo: {settings.max_file_size_mb} MB.")
 
 session = get_session()
 casos = session.query(Caso).order_by(Caso.fecha_creacion.desc()).all()
@@ -39,6 +40,13 @@ if st.button("Procesar documentos", disabled=not archivos):
     barra = st.progress(0.0)
     total_items_creados = 0
     for idx, archivo in enumerate(archivos):
+        if excede_tamano_maximo(archivo.size, settings.max_file_size_mb):
+            st.error(
+                f"{archivo.name} supera el tamaño máximo permitido "
+                f"({settings.max_file_size_mb} MB) y no fue procesado."
+            )
+            barra.progress((idx + 1) / len(archivos))
+            continue
         ruta = guardar_archivo_caso(caso.id, archivo)
         with st.spinner(f"Extrayendo información de {archivo.name}..."):
             try:
@@ -94,7 +102,7 @@ if st.button("Procesar documentos", disabled=not archivos):
     registrar_acceso(
         session,
         caso.id,
-        settings.usuario_actual,
+        settings.current_user,
         "carga_documentos",
         detalle=f"{len(archivos)} archivo(s), {total_items_creados} ítem(es) extraídos",
     )

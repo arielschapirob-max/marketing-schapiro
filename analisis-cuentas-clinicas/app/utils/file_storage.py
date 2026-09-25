@@ -7,8 +7,12 @@ from pathlib import Path
 from app.config import settings
 
 
+def excede_tamano_maximo(tamano_bytes: int, limite_mb: int) -> bool:
+    return tamano_bytes > limite_mb * 1024 * 1024
+
+
 def guardar_archivo_caso(caso_id: int, archivo_subido) -> Path:
-    carpeta_caso = settings.storage_dir / str(caso_id)
+    carpeta_caso = settings.output_dir / str(caso_id)
     carpeta_caso.mkdir(parents=True, exist_ok=True)
     extension = Path(archivo_subido.name).suffix
     nombre_unico = f"{uuid.uuid4().hex}{extension}"
@@ -19,6 +23,6 @@ def guardar_archivo_caso(caso_id: int, archivo_subido) -> Path:
 
 
 def eliminar_archivos_caso(caso_id: int) -> None:
-    carpeta_caso = settings.storage_dir / str(caso_id)
+    carpeta_caso = settings.output_dir / str(caso_id)
     if carpeta_caso.exists():
         shutil.rmtree(carpeta_caso)

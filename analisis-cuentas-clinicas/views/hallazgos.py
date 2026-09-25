@@ -50,7 +50,7 @@ if st.button("Analizar y generar hallazgos"):
     registrar_acceso(
         session,
         caso.id,
-        settings.usuario_actual,
+        settings.current_user,
         "analisis_hallazgos",
         detalle=f"{len(nuevos)} hallazgo(s)",
     )
@@ -83,7 +83,7 @@ for h in hallazgos:
                 "estado",
                 h.estado,
                 nuevo_estado,
-                settings.usuario_actual,
+                settings.current_user,
             )
             h.estado = nuevo_estado
             session.commit()
