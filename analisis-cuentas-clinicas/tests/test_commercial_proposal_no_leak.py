@@ -4,6 +4,7 @@ reclamación, conforme a la separación estricta exigida entre el informe
 interno y la propuesta comercial.
 """
 
+import re
 import types
 
 import pymupdf
@@ -11,6 +12,7 @@ from docx import Document as DocxDocument
 
 from app.reports.commercial_proposal_docx import generar_propuesta_docx
 from app.reports.commercial_proposal_pdf import generar_propuesta_pdf
+from app.reports.texts import REGLAS_PROPUESTA_EXTERNA
 
 TERMINOS_PROHIBIDOS = [
     "codigo_prestacion",
@@ -24,7 +26,13 @@ TERMINOS_PROHIBIDOS = [
     "recurso de reposición",
     "hallazgo potencialmente discutible",
     "stent coronario",
+    "arancel",
+    "caec",
 ]
+
+# "ges" (programa GES) se verifica con límite de palabra: como substring colisiona
+# con "gestión"/"gestionar", que sí son parte del lenguaje comercial legítimo de la propuesta.
+PATRON_ACRONIMO_GES = re.compile(r"\bges\b")
 
 
 def _caso_falso():
@@ -52,6 +60,7 @@ def test_propuesta_docx_no_filtra_metodologia(tmp_path):
 
     for termino in TERMINOS_PROHIBIDOS:
         assert termino.lower() not in texto
+    assert PATRON_ACRONIMO_GES.search(texto) is None
 
 
 def test_propuesta_pdf_no_filtra_metodologia_y_respeta_dos_paginas(tmp_path):
@@ -65,6 +74,7 @@ def test_propuesta_pdf_no_filtra_metodologia_y_respeta_dos_paginas(tmp_path):
 
     for termino in TERMINOS_PROHIBIDOS:
         assert termino.lower() not in texto
+    assert PATRON_ACRONIMO_GES.search(texto) is None
     assert n_paginas <= 2
 
 
@@ -77,3 +87,8 @@ def test_propuesta_incluye_frase_obligatoria_y_ausencia_de_garantia(tmp_path):
 
     assert "Del examen preliminar de los antecedentes recibidos" in texto
     assert "obligación de medios y no de resultado" in texto
+
+
+def test_reglas_propuesta_externa_definidas():
+    assert len(REGLAS_PROPUESTA_EXTERNA) >= 5
+    assert all(isinstance(regla, str) and regla.strip() for regla in REGLAS_PROPUESTA_EXTERNA)

@@ -12,6 +12,7 @@ from app.reports.commercial_proposal_docx import generar_propuesta_docx
 from app.reports.commercial_proposal_pdf import generar_propuesta_pdf
 from app.reports.internal_report_docx import generar_informe_interno_docx
 from app.reports.internal_report_xlsx import generar_informe_interno_xlsx
+from app.reports.texts import REGLAS_PROPUESTA_EXTERNA
 from app.security.audit import registrar_acceso
 
 st.title("Generación de informes")
@@ -78,6 +79,9 @@ with tab_comercial:
         "Esta propuesta es breve (máx. dos páginas) y no revela metodología, códigos, fundamentos jurídicos "
         "específicos, jurisprudencia ni estrategia de reclamación."
     )
+    with st.expander("Reglas de la propuesta comercial"):
+        for regla in REGLAS_PROPUESTA_EXTERNA:
+            st.caption(f"• {regla}")
     with st.form("form_honorarios"):
         honorario_fijo_texto = st.text_input("Honorario fijo (texto, ej: 'UF 15')", value="")
         incluir_exito = st.checkbox("Incluir honorario de éxito")

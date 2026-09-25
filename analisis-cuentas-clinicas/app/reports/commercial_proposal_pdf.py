@@ -1,8 +1,7 @@
 """Generador de la propuesta comercial (PDF, máx. 2 páginas) para el potencial cliente.
 
-Misma advertencia de diseño que ``commercial_proposal_docx.py``: contenido
-genérico únicamente, sin metodología, códigos, fundamentos jurídicos
-específicos, jurisprudencia ni estrategia.
+Misma advertencia de diseño que ``commercial_proposal_docx.py``: debe
+respetar siempre ``app.reports.texts.REGLAS_PROPUESTA_EXTERNA``.
 """
 
 import datetime as dt

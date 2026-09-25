@@ -19,6 +19,16 @@ ADVERTENCIA_VALIDACION_PROFESIONAL = (
 
 # --- Propuesta comercial ------------------------------------------------
 
+REGLAS_PROPUESTA_EXTERNA = [
+    "No mencionar códigos, aranceles, GES, CAEC, glosas ni fundamentos jurídicos.",
+    "No incluir ítems específicos, montos por ítem ni hipótesis de error.",
+    "No explicar cómo reclamar ni ante qué entidad debe presentarse la gestión.",
+    "No reproducir la matriz de hallazgos ni el análisis interno.",
+    "No indicar que existe una vulneración o arbitrariedad confirmada.",
+    "Usar lenguaje comercial, prudente y general.",
+    "Mantener el documento dentro de dos páginas.",
+]
+
 FRASE_PROPUESTA_COMERCIAL = (
     "Del examen preliminar de los antecedentes recibidos, se observa la conveniencia de efectuar una revisión "
     "profesional y, de resultar procedente, gestionar las acciones que correspondan."

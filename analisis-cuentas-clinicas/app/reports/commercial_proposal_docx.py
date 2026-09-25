@@ -1,10 +1,9 @@
 """Generador de la propuesta comercial (DOCX) para el potencial cliente.
 
-ADVERTENCIA DE DISEÑO: este módulo NO debe importar ni referenciar código de
-prestación, fundamento legal específico, jurisprudencia, detalle de glosa,
-estrategia de reclamación, metodología de detección ni montos exactos por
-ítem. Solo debe recibir textos genéricos de honorarios configurados por el
-abogado. Ver ``tests/test_commercial_proposal_no_leak.py``.
+ADVERTENCIA DE DISEÑO: este módulo debe respetar siempre
+``app.reports.texts.REGLAS_PROPUESTA_EXTERNA``. Solo debe recibir textos
+genéricos de honorarios configurados por el abogado. Ver
+``tests/test_commercial_proposal_no_leak.py``.
 """
 
 import datetime as dt
