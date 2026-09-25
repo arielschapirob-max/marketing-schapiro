@@ -114,7 +114,9 @@ docker compose up --build
 
 La aplicación queda disponible en `http://localhost:8501`.
 
-## Ejecución
+## Cómo ejecutar la aplicación
+
+Requiere haber completado la instalación (sección anterior: entorno virtual creado y `pip install -r requirements.txt` ya ejecutado).
 
 ```bash
 # activar entorno virtual si no está activo
@@ -124,7 +126,9 @@ source .venv/bin/activate        # macOS/Linux
 streamlit run app.py
 ```
 
-Abra el navegador en `http://localhost:8501`.
+Abra el navegador en `http://localhost:8501`. La aplicación queda corriendo en primer plano en esa terminal; para detenerla presione `Ctrl+C`. La próxima vez que quiera usarla, repita solo estos dos pasos (activar el entorno virtual y `streamlit run app.py`) desde la carpeta `analisis-cuentas-clinicas/` — no hace falta reinstalar nada salvo que cambie `requirements.txt`.
+
+**Para verificar rápidamente que todo funciona** sin escribir datos reales: genere el material ficticio (`python scripts/generar_datos_muestra.py`, deja los archivos en `samples/`) y recorra Inicio → Cargar Caso → Revisión Manual → Hallazgos → Informes con esos archivos. El botón "Analizar y generar hallazgos" está deshabilitado hasta aprobar la revisión manual, y "Generar propuesta comercial" está deshabilitado hasta triar (aprobar/descartar/requiere antecedentes) todos los hallazgos — si ambos aparecen bloqueados al principio, es el comportamiento esperado, no un error.
 
 ## Flujo de uso
 
