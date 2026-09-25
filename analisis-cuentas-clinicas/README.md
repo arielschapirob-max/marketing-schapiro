@@ -30,6 +30,7 @@ Instale Python 3.12 (por ejemplo con Homebrew: `brew install python@3.12`). Lueg
 ```bash
 mkdir analisis-cuentas-clinicas
 cd analisis-cuentas-clinicas
+cp .env.example .env
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -56,6 +57,7 @@ Asegúrese de tener Python 3.12 disponible (`sudo apt install python3.12 python3
 ```bash
 mkdir analisis-cuentas-clinicas
 cd analisis-cuentas-clinicas
+cp .env.example .env
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -84,6 +86,7 @@ Instale Python 3.12 desde [python.org](https://www.python.org/downloads/) (marca
 ```powershell
 mkdir analisis-cuentas-clinicas
 cd analisis-cuentas-clinicas
+cp .env.example .env
 
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
