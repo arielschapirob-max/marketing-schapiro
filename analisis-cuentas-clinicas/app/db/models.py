@@ -51,6 +51,7 @@ class Documento(Base):
     caso_id = Column(Integer, ForeignKey("casos.id"), nullable=False)
     nombre_archivo = Column(String, nullable=False)
     tipo_archivo = Column(String, nullable=False)
+    tipo_documento = Column(String, nullable=False, default="otro")
     ruta_archivo = Column(String, nullable=False)
     fecha_carga = Column(DateTime, default=dt.datetime.utcnow)
     texto_extraido = Column(Text, nullable=True)
@@ -65,6 +66,7 @@ class ItemCuenta(Base):
     id = Column(Integer, primary_key=True)
     caso_id = Column(Integer, ForeignKey("casos.id"), nullable=False)
     documento_id = Column(Integer, ForeignKey("documentos.id"), nullable=True)
+    pagina_origen = Column(Integer, nullable=True)
 
     numero_cuenta = Column(String, nullable=True)
     afiliado = Column(String, nullable=True)

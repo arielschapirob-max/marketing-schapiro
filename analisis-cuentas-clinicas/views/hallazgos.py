@@ -33,11 +33,14 @@ items = session.query(ItemCuenta).filter(ItemCuenta.caso_id == caso.id).all()
 
 if not caso.aprobado_por_abogado:
     st.warning(
-        "Este caso aún no ha sido aprobado por el abogado en la Revisión Manual. Se recomienda completar esa "
-        "aprobación antes de generar hallazgos definitivos."
+        "Este caso aún no ha sido aprobado por el abogado en la Revisión Manual. El análisis está bloqueado "
+        "hasta que apruebe la revisión de los datos extraídos."
     )
 
-if st.button("Analizar y generar hallazgos"):
+if not items:
+    st.info("Este caso aún no tiene ítems cargados. Cargue documentos y complete la revisión manual primero.")
+
+if st.button("Analizar y generar hallazgos", disabled=not caso.aprobado_por_abogado or not items):
     existentes = session.query(Hallazgo).filter(Hallazgo.caso_id == caso.id).all()
     for h in existentes:
         session.delete(h)

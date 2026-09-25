@@ -29,6 +29,7 @@ class ItemExtraido(BaseModel):
     glosa: str | None = None
     deducible: float | None = None
     total: float | None = None
+    pagina_origen: int | None = None
     confianza: dict[str, NivelConfianza] = {}
 
     @field_validator("rut")

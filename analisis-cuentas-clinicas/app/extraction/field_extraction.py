@@ -130,7 +130,7 @@ def extraer_campos_globales(texto: str) -> dict:
     return {"campos": campos, "confianza": confianza}
 
 
-def extraer_items_desde_texto(texto: str, metodo: str) -> list[dict]:
+def extraer_items_desde_texto(texto: str, metodo: str, pagina: int | None = None) -> list[dict]:
     """Extrae ítems línea por línea desde texto libre (PDF con texto u OCR).
 
     Heurística: una línea con al menos un monto en formato chileno y contenido
@@ -138,6 +138,9 @@ def extraer_items_desde_texto(texto: str, metodo: str) -> list[dict]:
     encontrados se ordenan de mayor a menor y se asignan posicionalmente a
     cobrado / bonificado / copago, que es el orden más habitual en cuentas
     e isapres chilenas. Requiere validación manual.
+
+    ``pagina``, si se indica, se guarda en cada ítem como ``pagina_origen``
+    para trazabilidad en la pantalla de revisión manual y el informe interno.
     """
     confianza_base = "bajo" if "ocr" in metodo else "medio"
     items = []
@@ -179,6 +182,7 @@ def extraer_items_desde_texto(texto: str, metodo: str) -> list[dict]:
                 "valor_cobrado": valor_cobrado,
                 "valor_bonificado": valor_bonificado,
                 "copago": copago,
+                "pagina_origen": pagina,
                 "confianza": {
                     "codigo_prestacion": "medio" if codigo else "bajo",
                     "descripcion": confianza_base,

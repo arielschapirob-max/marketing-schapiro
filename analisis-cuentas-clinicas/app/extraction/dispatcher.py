@@ -17,18 +17,23 @@ def extraer_documento(ruta: str) -> dict:
     if ext not in EXTENSIONES_SOPORTADAS:
         raise ValueError(f"Extensión no soportada: {ext}")
 
-    resultado = {"texto": "", "tablas": [], "hojas": {}, "metodo": "", "extension": ext}
+    resultado = {"texto": "", "tablas": [], "hojas": {}, "paginas": [], "metodo": "", "extension": ext}
 
     if ext == ".pdf":
-        texto, tiene_texto = pdf_text.extraer_texto_pdf(ruta)
+        texto, tiene_texto, paginas = pdf_text.extraer_texto_pdf(ruta)
         if tiene_texto and len(texto.strip()) > UMBRAL_TEXTO_PDF:
             resultado["texto"] = texto
+            resultado["paginas"] = paginas
             resultado["metodo"] = "pdf_texto"
         else:
-            resultado["texto"] = pdf_ocr.extraer_texto_pdf_ocr(ruta)
+            texto_ocr, paginas_ocr = pdf_ocr.extraer_texto_pdf_ocr(ruta)
+            resultado["texto"] = texto_ocr
+            resultado["paginas"] = paginas_ocr
             resultado["metodo"] = "pdf_ocr"
     elif ext in EXTENSIONES_IMAGEN:
-        resultado["texto"] = pdf_ocr.extraer_texto_imagen(ruta)
+        texto_imagen = pdf_ocr.extraer_texto_imagen(ruta)
+        resultado["texto"] = texto_imagen
+        resultado["paginas"] = [texto_imagen]
         resultado["metodo"] = "imagen_ocr"
     elif ext == ".docx":
         texto, tablas = docx_extractor.extraer_texto_docx(ruta)

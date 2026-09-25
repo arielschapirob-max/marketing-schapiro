@@ -5,6 +5,7 @@ import datetime as dt
 import docx
 
 from app.analysis.findings_engine import calcular_monto_total_discutible
+from app.extraction.document_types import TIPOS_DOCUMENTO, TIPOS_RELEVANTES_PARA_CASO
 from app.extraction.normalization import formatear_rut
 from app.reports import texts
 
@@ -15,7 +16,20 @@ def _fmt(monto) -> str:
     return f"${monto:,.0f}".replace(",", ".")
 
 
-def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida: str) -> str:
+def _confianza_resumen(item) -> str:
+    confianza = item.get_confianza()
+    if not confianza:
+        return "N/D"
+    niveles = list(confianza.values())
+    if "bajo" in niveles:
+        return "bajo"
+    if "medio" in niveles:
+        return "medio"
+    return "alto"
+
+
+def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida: str, documentos=None) -> str:
+    documentos = documentos or []
     documento = docx.Document()
     documento.add_heading("Informe Interno Jurídico-Técnico — CONFIDENCIAL", level=1)
     documento.add_paragraph(f"Fecha de generación: {dt.datetime.now().strftime('%d-%m-%Y %H:%M')}")
@@ -32,7 +46,7 @@ def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida:
     documento.add_paragraph(f"Valor total bonificado: {_fmt(total_bonificado)}")
 
     documento.add_heading("2. Matriz de ítems", level=2)
-    tabla_items = documento.add_table(rows=1, cols=8)
+    tabla_items = documento.add_table(rows=1, cols=11)
     tabla_items.style = "Light Grid Accent 1"
     encabezados = [
         "Código",
@@ -42,6 +56,9 @@ def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida:
         "Copago",
         "No cubierto",
         "Glosa",
+        "Documento origen",
+        "Página",
+        "Confianza",
         "Aprobado",
     ]
     for celda, texto in zip(tabla_items.rows[0].cells, encabezados):
@@ -55,7 +72,10 @@ def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida:
         fila[4].text = _fmt(item.copago)
         fila[5].text = _fmt(item.monto_no_cubierto)
         fila[6].text = (item.glosa or "-")[:60]
-        fila[7].text = "Sí" if item.aprobado else "No"
+        fila[7].text = item.documento.nombre_archivo if item.documento else "-"
+        fila[8].text = str(item.pagina_origen) if item.pagina_origen else "-"
+        fila[9].text = _confianza_resumen(item)
+        fila[10].text = "Sí" if item.aprobado else "No"
 
     documento.add_heading("3. Matriz de hallazgos", level=2)
     documento.add_paragraph(
@@ -88,12 +108,17 @@ def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida:
     documento.add_paragraph(f"Monto potencialmente discutible estimado: {_fmt(monto_total)}")
 
     documento.add_heading("5. Antecedentes disponibles y faltantes", level=2)
-    faltantes = sorted({h.documentos_faltantes for h in hallazgos if h.documentos_faltantes})
-    if faltantes:
-        for f in faltantes:
+    tipos_disponibles = {d.tipo_documento for d in documentos}
+    documento.add_paragraph("Documentos del caso:")
+    for tipo_clave in TIPOS_RELEVANTES_PARA_CASO:
+        disponible = tipo_clave in tipos_disponibles
+        etiqueta = TIPOS_DOCUMENTO.get(tipo_clave, tipo_clave)
+        documento.add_paragraph(f"{'Disponible' if disponible else 'FALTANTE'} — {etiqueta}", style="List Bullet")
+    faltantes_por_hallazgo = sorted({h.documentos_faltantes for h in hallazgos if h.documentos_faltantes})
+    if faltantes_por_hallazgo:
+        documento.add_paragraph("Antecedentes adicionales solicitados por hallazgos específicos:")
+        for f in faltantes_por_hallazgo:
             documento.add_paragraph(f, style="List Bullet")
-    else:
-        documento.add_paragraph("No se identificaron antecedentes faltantes adicionales.")
 
     documento.add_heading("6. Advertencia de validación profesional", level=2)
     parrafo = documento.add_paragraph(texts.ADVERTENCIA_VALIDACION_PROFESIONAL)

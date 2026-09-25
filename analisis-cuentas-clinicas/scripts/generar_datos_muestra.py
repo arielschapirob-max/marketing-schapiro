@@ -180,6 +180,67 @@ def generar_pdf_escaneado_muestra() -> Path:
     return ruta
 
 
+def _generar_pdf_de_texto(nombre_archivo: str, titulo: str, parrafos: list[str]) -> Path:
+    """Genera un PDF de prosa (sin líneas con montos) para documentos de
+    contexto: carta de rechazo, plan de salud, antecedentes médicos. No debe
+    producir ítems al procesarse (ver TIPOS_CON_ITEMS en document_types.py).
+    """
+    ruta = DESTINO / nombre_archivo
+    doc = SimpleDocTemplate(
+        str(ruta), pagesize=LETTER, topMargin=2 * cm, bottomMargin=2 * cm, leftMargin=2 * cm, rightMargin=2 * cm
+    )
+    estilos = getSampleStyleSheet()
+    elementos = [Paragraph(titulo, estilos["Heading1"])]
+    for parrafo in parrafos:
+        elementos.append(Paragraph(parrafo, estilos["Normal"]))
+        elementos.append(Spacer(1, 0.3 * cm))
+    doc.build(elementos)
+    return ruta
+
+
+def generar_carta_rechazo_muestra() -> Path:
+    return _generar_pdf_de_texto(
+        "carta_rechazo_ficticia.pdf",
+        "Carta de rechazo (documento ficticio de prueba)",
+        [
+            "Folio N° RE-2026-004521, de fecha 20-03-2026.",
+            "Estimado(a) afiliado(a) ficticio(a): en respuesta a su solicitud de bonificación adicional "
+            "sobre la cuenta clínica N° CTA-2026-0099, se informa que la isapre ha resuelto no dar lugar "
+            "a lo solicitado.",
+            "Sin otro particular, se despide atentamente. Departamento de Atención al Afiliado "
+            "(documento ficticio, sin validez real).",
+        ],
+    )
+
+
+def generar_plan_salud_muestra() -> Path:
+    return _generar_pdf_de_texto(
+        "plan_salud_ficticio.pdf",
+        "Plan de salud (documento ficticio de prueba)",
+        [
+            "Plan ficticio de ejemplo, isapre Consalud, vigente desde 01-01-2025.",
+            "Cobertura hospitalaria: bonificación general del sesenta por ciento sobre arancel del plan, "
+            "sujeta a topes por evento según tabla de prestaciones.",
+            "Cobertura ambulatoria: bonificación general del cuarenta por ciento sobre arancel del plan.",
+            "Este documento es ficticio y se usa únicamente para pruebas locales de la aplicación.",
+        ],
+    )
+
+
+def generar_antecedentes_medicos_muestra() -> Path:
+    return _generar_pdf_de_texto(
+        "antecedentes_medicos_ficticio.pdf",
+        "Antecedentes médicos (documento ficticio de prueba)",
+        [
+            "Paciente ficticio de prueba, sin datos identificatorios reales.",
+            "Antecedente: cuadro clínico compatible con síndrome coronario agudo, ficticio, usado solo "
+            "para pruebas de la aplicación.",
+            "Procedimiento indicado según protocolo institucional ficticio: angioplastía con instalación "
+            "de endoprótesis coronaria (stent).",
+        ],
+    )
+
+
 if __name__ == "__main__":
     rutas = [
         generar_xlsx_muestra(),
@@ -187,6 +248,9 @@ if __name__ == "__main__":
         generar_pdf_muestra(),
         generar_imagen_muestra(),
         generar_pdf_escaneado_muestra(),
+        generar_carta_rechazo_muestra(),
+        generar_plan_salud_muestra(),
+        generar_antecedentes_medicos_muestra(),
     ]
     for ruta in rutas:
         print(f"Generado: {ruta}")

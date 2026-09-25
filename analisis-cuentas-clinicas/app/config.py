@@ -29,4 +29,6 @@ class Settings:
 
 settings = Settings()
 settings.output_dir.mkdir(parents=True, exist_ok=True)
-(BASE_DIR / "storage").mkdir(parents=True, exist_ok=True)
+if settings.database_url.startswith("sqlite:///"):
+    _ruta_bd = Path(settings.database_url.removeprefix("sqlite:///"))
+    _ruta_bd.parent.mkdir(parents=True, exist_ok=True)

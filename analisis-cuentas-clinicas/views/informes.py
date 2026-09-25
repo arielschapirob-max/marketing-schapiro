@@ -7,7 +7,7 @@ import streamlit as st
 
 from app.config import settings
 from app.db.database import get_session
-from app.db.models import Caso, Hallazgo, ItemCuenta, RegistroCambio
+from app.db.models import Caso, Documento, Hallazgo, ItemCuenta, RegistroCambio
 from app.reports.commercial_proposal_docx import generar_propuesta_docx
 from app.reports.commercial_proposal_pdf import generar_propuesta_pdf
 from app.reports.internal_report_docx import generar_informe_interno_docx
@@ -30,6 +30,7 @@ caso = session.get(Caso, caso_id)
 
 items = session.query(ItemCuenta).filter(ItemCuenta.caso_id == caso.id).all()
 hallazgos = session.query(Hallazgo).filter(Hallazgo.caso_id == caso.id).all()
+documentos = session.query(Documento).filter(Documento.caso_id == caso.id).all()
 historial = (
     session.query(RegistroCambio).filter(RegistroCambio.caso_id == caso.id).order_by(RegistroCambio.fecha).all()
 )
@@ -46,14 +47,14 @@ with tab_interno:
     )
     if not caso.aprobado_por_abogado:
         st.error(
-            "El caso aún no ha sido aprobado por el abogado en la revisión manual. Se recomienda completar "
-            "dicha aprobación antes de emitir el informe interno."
+            "El caso aún no ha sido aprobado por el abogado en la revisión manual. El informe interno queda "
+            "bloqueado hasta completar esa aprobación."
         )
-    if st.button("Generar informe interno (DOCX + XLSX)"):
+    if st.button("Generar informe interno (DOCX + XLSX)", disabled=not caso.aprobado_por_abogado):
         ruta_docx = carpeta_salida / f"informe_interno_{caso.id}.docx"
         ruta_xlsx = carpeta_salida / f"informe_interno_{caso.id}.xlsx"
-        generar_informe_interno_docx(caso, items, hallazgos, historial, str(ruta_docx))
-        generar_informe_interno_xlsx(caso, items, hallazgos, historial, str(ruta_xlsx))
+        generar_informe_interno_docx(caso, items, hallazgos, historial, str(ruta_docx), documentos=documentos)
+        generar_informe_interno_xlsx(caso, items, hallazgos, historial, str(ruta_xlsx), documentos=documentos)
         registrar_acceso(session, caso.id, settings.current_user, "generacion_informe_interno")
         st.success("Informe interno generado.")
         st.session_state["ruta_informe_docx"] = str(ruta_docx)
@@ -82,6 +83,23 @@ with tab_comercial:
     with st.expander("Reglas de la propuesta comercial"):
         for regla in REGLAS_PROPUESTA_EXTERNA:
             st.caption(f"• {regla}")
+
+    hallazgos_pendientes = [h for h in hallazgos if h.estado == "pendiente"]
+    propuesta_bloqueada = not hallazgos or bool(hallazgos_pendientes)
+    if not hallazgos:
+        st.warning(
+            "No hay hallazgos generados para este caso. La propuesta comercial queda bloqueada hasta que "
+            "existan hallazgos revisados en la página de Hallazgos."
+        )
+    elif hallazgos_pendientes:
+        st.warning(
+            f"Quedan {len(hallazgos_pendientes)} hallazgo(s) en estado 'pendiente'. La propuesta comercial "
+            "queda bloqueada hasta que el abogado marque manualmente cada hallazgo como aprobado, descartado "
+            "o requiere antecedentes en la página de Hallazgos."
+        )
+    else:
+        st.success("Todos los hallazgos fueron revisados por el abogado. Puede generar la propuesta comercial.")
+
     with st.form("form_honorarios"):
         honorario_fijo_texto = st.text_input("Honorario fijo (texto, ej: 'UF 15')", value="")
         incluir_exito = st.checkbox("Incluir honorario de éxito")
@@ -93,7 +111,7 @@ with tab_comercial:
             "Exclusiones (opcional; si se deja vacío se usa el texto por defecto)", value=""
         )
         vigencia_dias = st.number_input("Vigencia de la propuesta (días)", min_value=1, max_value=90, value=15)
-        generar = st.form_submit_button("Generar propuesta comercial (DOCX + PDF)")
+        generar = st.form_submit_button("Generar propuesta comercial (DOCX + PDF)", disabled=propuesta_bloqueada)
 
     if generar:
         honorarios = {

@@ -129,12 +129,12 @@ Abra el navegador en `http://localhost:8501`.
 ## Flujo de uso
 
 1. **Inicio**: crear un caso (nombre del potencial cliente, RUT opcional, isapre, número de cuenta) aceptando el aviso de datos sensibles y consentimiento.
-2. **Cargar Caso**: subir uno o más archivos PDF, JPG, PNG, DOCX o XLSX. La aplicación extrae texto/tablas localmente (PyMuPDF, OCR con pytesseract/Poppler, python-docx, pandas/openpyxl) y estructura ítems preliminares.
-3. **Revisión Manual**: editar y aprobar los ítems extraídos. Obligatoria antes de generar hallazgos definitivos.
-4. **Hallazgos**: ejecutar el motor de análisis (cobertura, glosas, aritmética, duplicados, dispositivos médicos relevantes) y gestionar el estado de cada hallazgo (pendiente / aprobado / descartado / requiere antecedentes).
+2. **Cargar Caso**: subir uno o más archivos PDF, JPG, PNG, DOCX o XLSX, indicando el **tipo de cada documento** (cuenta clínica, liquidación de isapre, carta de rechazo, plan de salud, antecedentes médicos, otro). Solo los dos primeros tipos pasan por la extracción automática de ítems; los demás se guardan como antecedentes de referencia (evita generar ítems espurios sobre un documento que no es una cuenta). La aplicación extrae texto/tablas localmente (PyMuPDF, OCR con pytesseract/Poppler, python-docx, pandas/openpyxl).
+3. **Revisión Manual**: cada ítem muestra su valor extraído, documento y página de origen, y nivel de confianza. Puede editar cualquier campo, marcarlo como aprobado, o eliminar filas espurias directamente en la tabla. Obligatoria antes de generar hallazgos definitivos.
+4. **Hallazgos**: el botón de análisis está **bloqueado** hasta que el abogado apruebe la revisión manual del caso. Ejecuta el motor de análisis (cobertura, glosas, aritmética, duplicados, dispositivos médicos relevantes) y permite gestionar el estado de cada hallazgo (pendiente / aprobado / descartado / requiere antecedentes).
 5. **Informes**:
-   - **Informe interno** (DOCX + XLSX): resumen de la cuenta, matriz de ítems, matriz de hallazgos, monto potencialmente discutible (sin duplicar ítems), antecedentes faltantes, advertencia de validación profesional obligatoria e historial de cambios/aprobación.
-   - **Propuesta comercial** (DOCX + PDF): configure honorario fijo, honorario de éxito (opcional), gastos, exclusiones y vigencia; se genera un documento breve y genérico, sin detalle de hallazgos.
+   - **Informe interno** (DOCX + XLSX): resumen de la cuenta, matriz de ítems (con documento/página/confianza de cada uno), matriz de hallazgos, documentos disponibles y faltantes para el caso, monto potencialmente discutible (sin duplicar ítems), advertencia de validación profesional obligatoria e historial de cambios/aprobación. Bloqueado hasta aprobar la revisión manual.
+   - **Propuesta comercial** (DOCX + PDF): nunca se genera automáticamente. El botón de generación está **bloqueado hasta que el abogado triara manualmente todos los hallazgos** (ningún hallazgo puede quedar en estado "pendiente"). Configure honorario fijo, honorario de éxito (opcional), exclusiones y vigencia; los gastos externos usan siempre el mismo texto estándar. Se genera un documento breve y genérico, sin detalle de hallazgos.
 6. **Configuración y auditoría**: estado de la configuración de entorno (incluida la confirmación de que no se usa IA externa por defecto) y registro de accesos por caso.
 
 Desde la página de **Inicio** también puede **eliminar por completo un caso**, lo que borra sus registros en base de datos y todos sus archivos y documentos generados.
@@ -154,6 +154,12 @@ Genera una cuenta clínica ficticia en los 5 formatos soportados por la aplicaci
 - `cuenta_clinica_ficticia.pdf` (con texto real, sin OCR)
 - `cuenta_clinica_ficticia.png` (imagen, requiere OCR)
 - `cuenta_clinica_escaneada_ficticia.pdf` (PDF sin capa de texto, requiere OCR)
+
+Y tres documentos de contexto (tipo carta de rechazo, plan de salud y antecedentes médicos), para probar que la aplicación clasifica correctamente qué documentos pasan por extracción de ítems y cuáles no:
+
+- `carta_rechazo_ficticia.pdf`
+- `plan_salud_ficticio.pdf`
+- `antecedentes_medicos_ficticio.pdf`
 
 Los archivos se guardan en `samples/` (excluida de git).
 

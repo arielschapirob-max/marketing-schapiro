@@ -4,9 +4,23 @@ import openpyxl
 from openpyxl.styles import Font
 
 from app.analysis.findings_engine import calcular_monto_total_discutible
+from app.extraction.document_types import TIPOS_DOCUMENTO, TIPOS_RELEVANTES_PARA_CASO
 
 
-def generar_informe_interno_xlsx(caso, items, hallazgos, historial, ruta_salida: str) -> str:
+def _confianza_resumen(item) -> str:
+    confianza = item.get_confianza()
+    if not confianza:
+        return "N/D"
+    niveles = list(confianza.values())
+    if "bajo" in niveles:
+        return "bajo"
+    if "medio" in niveles:
+        return "medio"
+    return "alto"
+
+
+def generar_informe_interno_xlsx(caso, items, hallazgos, historial, ruta_salida: str, documentos=None) -> str:
+    documentos = documentos or []
     wb = openpyxl.Workbook()
 
     resumen = wb.active
@@ -24,6 +38,13 @@ def generar_informe_interno_xlsx(caso, items, hallazgos, historial, ruta_salida:
     resumen.append(["Total bonificado", total_bonificado])
     resumen.append(["Monto potencialmente discutible (sin duplicar ítems)", monto_discutible])
 
+    resumen.append([])
+    resumen.append(["Documentos del caso"])
+    tipos_disponibles = {d.tipo_documento for d in documentos}
+    for tipo_clave in TIPOS_RELEVANTES_PARA_CASO:
+        etiqueta = TIPOS_DOCUMENTO.get(tipo_clave, tipo_clave)
+        resumen.append([etiqueta, "Disponible" if tipo_clave in tipos_disponibles else "FALTANTE"])
+
     hoja_items = wb.create_sheet("Items")
     hoja_items.append(
         [
@@ -38,6 +59,9 @@ def generar_informe_interno_xlsx(caso, items, hallazgos, historial, ruta_salida:
             "Deducible",
             "Total",
             "Glosa",
+            "Documento origen",
+            "Página",
+            "Confianza",
             "Aprobado",
             "Editado manualmente",
         ]
@@ -56,6 +80,9 @@ def generar_informe_interno_xlsx(caso, items, hallazgos, historial, ruta_salida:
                 item.deducible,
                 item.total,
                 item.glosa,
+                item.documento.nombre_archivo if item.documento else None,
+                item.pagina_origen,
+                _confianza_resumen(item),
                 "Sí" if item.aprobado else "No",
                 "Sí" if item.editado_manualmente else "No",
             ]

@@ -14,9 +14,9 @@ from app.security.audit import registrar_acceso, registrar_cambio
 
 st.title("Revisión manual de ítems extraídos")
 st.caption(
-    "Edite y apruebe los datos extraídos antes de continuar con el análisis de hallazgos. Los campos con "
-    "nivel de confianza bajo o medio requieren especial atención: esta extracción es asistida y no reemplaza "
-    "el criterio del abogado."
+    "Edite, apruebe o elimine los datos extraídos antes de continuar con el análisis de hallazgos. Los "
+    "campos con nivel de confianza bajo o medio requieren especial atención: esta extracción es asistida y "
+    "no reemplaza el criterio del abogado. Cada fila indica el documento y la página de origen."
 )
 
 session = get_session()
@@ -48,6 +48,7 @@ CAMPOS_EDITABLES = [
     "total",
     "aprobado",
 ]
+COLUMNAS_ORIGEN = ["id", "documento_origen", "pagina_origen", "confianza"]
 
 filas = []
 for item in items:
@@ -65,6 +66,8 @@ for item in items:
     filas.append(
         {
             "id": item.id,
+            "documento_origen": item.documento.nombre_archivo if item.documento else "N/D",
+            "pagina_origen": item.pagina_origen,
             "codigo_prestacion": item.codigo_prestacion,
             "descripcion": item.descripcion,
             "cantidad": item.cantidad,
@@ -81,20 +84,45 @@ for item in items:
     )
 
 df = pd.DataFrame(filas)
-st.write("Columna `confianza`: nivel mínimo entre los campos extraídos para ese ítem (alto/medio/bajo).")
+st.write(
+    "Columna `confianza`: nivel mínimo entre los campos extraídos para ese ítem (alto/medio/bajo). "
+    "`pagina_origen` queda vacía cuando el formato de origen (DOCX/XLSX) no tiene un concepto de página. "
+    "Para eliminar un ítem espurio, bórrelo con el ícono de la fila."
+)
 df_editado = st.data_editor(
     df,
     key="editor_items",
-    num_rows="fixed",
-    disabled=["id", "confianza"],
+    num_rows="dynamic",
+    disabled=COLUMNAS_ORIGEN,
     use_container_width=True,
 )
 
 if st.button("Guardar cambios"):
     items_por_id = {item.id: item for item in items}
+    ids_en_edicion = {int(v) for v in df_editado["id"] if pd.notna(v)}
     cambios_totales = 0
+
+    for item_id, item in items_por_id.items():
+        if item_id not in ids_en_edicion:
+            registrar_cambio(
+                session,
+                caso.id,
+                "ItemCuenta",
+                item_id,
+                "eliminado",
+                "presente",
+                "eliminado",
+                settings.current_user,
+            )
+            session.delete(item)
+            cambios_totales += 1
+
     for _, fila in df_editado.iterrows():
-        item = items_por_id[fila["id"]]
+        if pd.isna(fila["id"]):
+            continue  # fila nueva agregada manualmente: sin extracción de origen, se omite
+        item = items_por_id.get(int(fila["id"]))
+        if item is None:
+            continue
         for campo in CAMPOS_EDITABLES:
             valor_nuevo = fila[campo]
             valor_actual = getattr(item, campo)
