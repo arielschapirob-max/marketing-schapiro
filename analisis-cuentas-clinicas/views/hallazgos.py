@@ -7,12 +7,10 @@ import streamlit as st
 
 from app.analysis.findings_engine import analizar_items, calcular_monto_total_discutible
 from app.config import settings
-from app.db.database import get_session, init_db
+from app.db.database import get_session
 from app.db.models import Caso, Hallazgo, ItemCuenta
 from app.security.audit import registrar_acceso, registrar_cambio
 
-st.set_page_config(page_title="Hallazgos", layout="wide")
-init_db()
 st.title("Hallazgos potencialmente discutibles")
 st.caption(
     "Los hallazgos identificados constituyen antecedentes preliminares que ameritan evaluación profesional. "

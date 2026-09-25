@@ -8,12 +8,10 @@ import pandas as pd
 import streamlit as st
 
 from app.config import settings
-from app.db.database import get_session, init_db
+from app.db.database import get_session
 from app.db.models import Caso, ItemCuenta
 from app.security.audit import registrar_acceso, registrar_cambio
 
-st.set_page_config(page_title="Revisión Manual", layout="wide")
-init_db()
 st.title("Revisión manual de ítems extraídos")
 st.caption(
     "Edite y apruebe los datos extraídos antes de continuar con el análisis de hallazgos. Los campos con "

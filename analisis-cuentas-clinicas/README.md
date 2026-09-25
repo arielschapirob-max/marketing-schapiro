@@ -113,8 +113,10 @@ Los archivos se guardan en `data/muestras/` (excluida de git).
 ## Estructura del proyecto
 
 ```
-app.py                        Punto de entrada de Streamlit (ejecutar con: streamlit run app.py)
-pages/                        Páginas del flujo: Cargar Caso, Revisión Manual, Hallazgos, Informes, Configuración
+app.py                        Punto de entrada de Streamlit (ejecutar con: streamlit run app.py); define la
+                               navegación (st.navigation) y los títulos de cada página en el menú lateral
+views/                         Páginas del flujo: Inicio, Cargar Caso, Revisión Manual, Hallazgos, Informes,
+                               Configuración y Auditoría
 app/
   config.py                   Configuración vía variables de entorno
   db/                         Modelos SQLAlchemy y sesión de base de datos

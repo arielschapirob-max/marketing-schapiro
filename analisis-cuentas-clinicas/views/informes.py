@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import streamlit as st
 
 from app.config import settings
-from app.db.database import get_session, init_db
+from app.db.database import get_session
 from app.db.models import Caso, Hallazgo, ItemCuenta, RegistroCambio
 from app.reports.commercial_proposal_docx import generar_propuesta_docx
 from app.reports.commercial_proposal_pdf import generar_propuesta_pdf
@@ -14,8 +14,6 @@ from app.reports.internal_report_docx import generar_informe_interno_docx
 from app.reports.internal_report_xlsx import generar_informe_interno_xlsx
 from app.security.audit import registrar_acceso
 
-st.set_page_config(page_title="Informes", layout="wide")
-init_db()
 st.title("Generación de informes")
 
 session = get_session()

@@ -6,11 +6,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import streamlit as st
 
 from app.config import settings
-from app.db.database import get_session, init_db
+from app.db.database import get_session
 from app.db.models import Caso, RegistroAcceso
 
-st.set_page_config(page_title="Configuración y auditoría", layout="wide")
-init_db()
 st.title("Configuración y auditoría")
 
 st.subheader("Configuración de entorno")
