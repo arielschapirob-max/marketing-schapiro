@@ -44,17 +44,28 @@ chmod +x install.sh
 
 ### Windows
 
-1. Instale Python 3.12 desde [python.org](https://www.python.org/downloads/).
-2. Instale Tesseract OCR (por ejemplo, desde [UB Mannheim builds](https://github.com/UB-Mannheim/tesseract/wiki)) y anote la ruta del ejecutable (ej. `C:\Program Files\Tesseract-OCR\tesseract.exe`).
-3. Instale Poppler para Windows (ej. desde [poppler para Windows](https://github.com/oschwartz10612/poppler-windows/releases)) y anote la ruta de su carpeta `Library\bin`.
-4. Abra PowerShell en la carpeta `analisis-cuentas-clinicas` y ejecute:
+Instale Python 3.12 desde [python.org](https://www.python.org/downloads/) (marcando "Add python.exe to PATH"), Tesseract OCR (por ejemplo, desde [UB Mannheim builds](https://github.com/UB-Mannheim/tesseract/wiki)) y Poppler para Windows (desde [poppler para Windows](https://github.com/oschwartz10612/poppler-windows/releases)), agregando las carpetas de Tesseract y de Poppler (`Library\bin`) al PATH del sistema. Luego, en PowerShell:
+
+```powershell
+mkdir analisis-cuentas-clinicas
+cd analisis-cuentas-clinicas
+
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Con Tesseract OCR y Poppler ya en el PATH, no hace falta editar .env
+pip install --upgrade pip
+pip install -r requirements.txt
+
+streamlit run app.py
+```
+
+**Alternativa sin tocar el PATH del sistema:** ejecute el script de instalación, que crea `.env` a partir de `.env.example`, y luego complete allí `TESSERACT_CMD` y `POPPLER_PATH` con la ruta del ejecutable de Tesseract y de la carpeta `Library\bin` de Poppler:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\install.ps1
 ```
-
-5. Edite el archivo `.env` generado y complete `TESSERACT_CMD` y `POPPLER_PATH` con las rutas anotadas en el paso 2 y 3.
 
 ### Docker (opcional, cualquier sistema operativo)
 

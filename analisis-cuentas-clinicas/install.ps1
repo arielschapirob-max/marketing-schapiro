@@ -1,11 +1,16 @@
 Write-Host "== Instalación de analisis-cuentas-clinicas =="
 
-if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+$pythonCmd = $null
+if (Get-Command py -ErrorAction SilentlyContinue) {
+    $pythonCmd = "py"
+} elseif (Get-Command python -ErrorAction SilentlyContinue) {
+    $pythonCmd = "python"
+} else {
     Write-Host "Error: no se encontró Python. Instale Python 3.12 antes de continuar." -ForegroundColor Red
     exit 1
 }
 
-python -m venv .venv
+& $pythonCmd -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
 pip install --upgrade pip
@@ -20,7 +25,8 @@ if (-not (Test-Path ".env")) {
 
 Write-Host ""
 Write-Host "Instalación completada."
-Write-Host "Instale Tesseract OCR y Poppler para Windows y configure TESSERACT_CMD y POPPLER_PATH en el archivo .env."
+Write-Host "Instale Tesseract OCR y Poppler para Windows y agregue ambos al PATH del sistema."
+Write-Host "Si prefiere no tocar el PATH, complete TESSERACT_CMD y POPPLER_PATH en el archivo .env con las rutas de instalación."
 Write-Host ""
 Write-Host "Para iniciar la aplicación ejecute:"
 Write-Host "  .\.venv\Scripts\Activate.ps1"
