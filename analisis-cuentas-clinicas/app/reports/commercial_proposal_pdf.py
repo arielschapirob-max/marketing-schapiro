@@ -9,9 +9,13 @@ import datetime as dt
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import ListFlowable, ListItem, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import ListFlowable, ListItem, Paragraph, SimpleDocTemplate
 
 from app.reports import texts
+
+
+def _lista(items, estilo):
+    return ListFlowable([ListItem(Paragraph(texto, estilo)) for texto in items], bulletType="bullet")
 
 
 def generar_propuesta_pdf(caso, honorarios: dict, ruta_salida: str, vigencia_dias: int = 15) -> str:
@@ -29,54 +33,35 @@ def generar_propuesta_pdf(caso, honorarios: dict, ruta_salida: str, vigencia_dia
     subtitulo = estilos["Heading2"]
 
     elementos = [
-        Paragraph("Propuesta de Servicios Profesionales", titulo),
-        Paragraph(f"Fecha: {dt.date.today().strftime('%d-%m-%Y')}", normal),
+        Paragraph(texts.TITULO_PROPUESTA, titulo),
         Paragraph(f"Cliente: {caso.nombre_cliente}", normal),
+        Paragraph(f"Caso: {texts.DESCRIPCION_CASO}", normal),
+        Paragraph(f"Fecha: {dt.date.today().strftime('%d-%m-%Y')}", normal),
+        Paragraph(texts.FRASE_PROPUESTA_COMERCIAL, normal),
     ]
-    if caso.numero_cuenta:
-        elementos.append(Paragraph(f"Caso relacionado: Cuenta clínica N° {caso.numero_cuenta}", normal))
-    elementos.append(Spacer(1, 0.3 * cm))
 
-    elementos.append(Paragraph("Antecedentes", subtitulo))
-    elementos.append(Paragraph(texts.FRASE_PROPUESTA_COMERCIAL, normal))
+    elementos.append(Paragraph("Alcance del encargo", subtitulo))
+    elementos.append(_lista(texts.SERVICIOS_PROPUESTA, normal))
 
-    elementos.append(Paragraph("Servicios incluidos", subtitulo))
-    elementos.append(
-        ListFlowable(
-            [ListItem(Paragraph(s, normal)) for s in texts.SERVICIOS_PROPUESTA],
-            bulletType="bullet",
-        )
-    )
-
-    elementos.append(Paragraph("Honorarios", subtitulo))
-    elementos.append(
-        Paragraph(
-            f"Honorario fijo: {honorarios.get('honorario_fijo_texto', 'A definir')} (neto, más IVA).",
-            normal,
-        )
-    )
+    honorarios_texto = [f"Honorario fijo: {honorarios.get('honorario_fijo_texto', 'A definir')} más IVA."]
     if honorarios.get("honorario_exito"):
-        elementos.append(
-            Paragraph(
-                f"Honorario de éxito: {honorarios.get('honorario_exito_texto', 'A definir')}",
-                normal,
-            )
+        honorarios_texto.append(
+            f"Honorario de éxito: {honorarios.get('honorario_exito_texto', 'A definir')}, si se pacta."
         )
+    honorarios_texto.append(texts.GASTOS_EXTERNOS)
+    elementos.append(Paragraph("Honorarios", subtitulo))
+    elementos.append(_lista(honorarios_texto, normal))
+    if honorarios.get("honorario_exito"):
         elementos.append(Paragraph(texts.DEFINICION_EXITO, normal))
-    if honorarios.get("gastos_texto"):
-        elementos.append(Paragraph(f"Gastos: {honorarios.get('gastos_texto')}", normal))
 
-    elementos.append(Paragraph("Exclusiones", subtitulo))
-    elementos.append(Paragraph(honorarios.get("exclusiones_texto") or texts.EXCLUSIONES_POR_DEFECTO, normal))
-
+    condiciones_texto = [
+        texts.AUSENCIA_GARANTIA,
+        texts.CONDICION_ANTECEDENTES,
+        f"La presente propuesta tiene vigencia de {vigencia_dias} días corridos.",
+        honorarios.get("exclusiones_texto") or texts.EXCLUSIONES_POR_DEFECTO,
+    ]
     elementos.append(Paragraph("Condiciones", subtitulo))
-    elementos.append(Paragraph(texts.AUSENCIA_GARANTIA, normal))
-    elementos.append(
-        Paragraph(
-            f"Esta propuesta tiene una vigencia de {vigencia_dias} días corridos desde su fecha de emisión.",
-            normal,
-        )
-    )
+    elementos.append(_lista(condiciones_texto, normal))
 
     elementos.append(Paragraph("Aceptación", subtitulo))
     elementos.append(Paragraph("Nombre: ______________________________", normal))

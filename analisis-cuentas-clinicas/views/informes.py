@@ -12,7 +12,7 @@ from app.reports.commercial_proposal_docx import generar_propuesta_docx
 from app.reports.commercial_proposal_pdf import generar_propuesta_pdf
 from app.reports.internal_report_docx import generar_informe_interno_docx
 from app.reports.internal_report_xlsx import generar_informe_interno_xlsx
-from app.reports.texts import REGLAS_PROPUESTA_EXTERNA
+from app.reports.texts import GASTOS_EXTERNOS, REGLAS_PROPUESTA_EXTERNA
 from app.security.audit import registrar_acceso
 
 st.title("Generación de informes")
@@ -86,9 +86,9 @@ with tab_comercial:
         honorario_fijo_texto = st.text_input("Honorario fijo (texto, ej: 'UF 15')", value="")
         incluir_exito = st.checkbox("Incluir honorario de éxito")
         honorario_exito_texto = st.text_input(
-            "Honorario de éxito (texto, ej: '15% del monto recuperado')", value=""
+            "Honorario de éxito (texto, ej: '15% del beneficio económico obtenido')", value=""
         )
-        gastos_texto = st.text_input("Gastos (texto, opcional)", value="")
+        st.caption(f"Gastos externos: se incluye siempre el texto estándar — «{GASTOS_EXTERNOS}»")
         exclusiones_texto = st.text_area(
             "Exclusiones (opcional; si se deja vacío se usa el texto por defecto)", value=""
         )
@@ -100,7 +100,6 @@ with tab_comercial:
             "honorario_fijo_texto": honorario_fijo_texto or "A definir en reunión",
             "honorario_exito": incluir_exito,
             "honorario_exito_texto": honorario_exito_texto,
-            "gastos_texto": gastos_texto,
             "exclusiones_texto": exclusiones_texto,
         }
         ruta_docx = carpeta_salida / f"propuesta_comercial_{caso.id}.docx"

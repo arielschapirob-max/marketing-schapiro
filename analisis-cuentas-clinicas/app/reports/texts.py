@@ -29,30 +29,34 @@ REGLAS_PROPUESTA_EXTERNA = [
     "Mantener el documento dentro de dos páginas.",
 ]
 
+TITULO_PROPUESTA = "PROPUESTA DE SERVICIOS PROFESIONALES"
+
+DESCRIPCION_CASO = "Revisión de cuenta clínica y liquidación de cobertura"
+
 FRASE_PROPUESTA_COMERCIAL = (
     "Del examen preliminar de los antecedentes recibidos, se observa la conveniencia de efectuar una revisión "
-    "profesional y, de resultar procedente, gestionar las acciones que correspondan."
+    "profesional y, de resultar procedente, gestionar las acciones que correspondan para resguardar los "
+    "intereses del cliente."
 )
 
 SERVICIOS_PROPUESTA = [
-    "Revisión profesional de los antecedentes entregados.",
-    "Definición de estrategia de abordaje del caso.",
-    "Gestión ante la entidad correspondiente, si procede.",
-    "Seguimiento y comunicación periódica de los avances del caso.",
+    "Revisión profesional de los antecedentes disponibles.",
+    "Definición de alternativa de gestión aplicable al caso.",
+    "Preparación y gestión de presentaciones que resulten procedentes.",
+    "Seguimiento del encargo y comunicación de avances relevantes.",
 ]
 
+GASTOS_EXTERNOS = "Gastos externos: serán de cargo del cliente, previa información, cuando correspondan."
+
 DEFINICION_EXITO = (
-    "Para efectos de esta propuesta, se entenderá por resultado exitoso la obtención de un monto adicional "
-    "bonificado, una devolución de dinero o una reducción efectiva del saldo adeudado, según corresponda al caso."
+    "El beneficio económico se entenderá como la bonificación adicional, devolución, pago o reducción "
+    "efectiva del saldo que resulte directamente de la gestión profesional."
 )
 
-AUSENCIA_GARANTIA = (
-    "El presente servicio corresponde a una obligación de medios y no de resultado. No se garantiza un "
-    "resultado determinado, el cual dependerá de los antecedentes del caso y de la evaluación de la entidad "
-    "correspondiente."
-)
+AUSENCIA_GARANTIA = "Esta propuesta no asegura un resultado determinado."
+
+CONDICION_ANTECEDENTES = "El encargo se ejecutará con base en los antecedentes que proporcione el cliente."
 
 EXCLUSIONES_POR_DEFECTO = (
-    "Se excluyen gestiones distintas a las descritas en esta propuesta y trámites ante entidades no "
-    "mencionadas en ella."
+    "Quedan excluidas las actuaciones no especificadas expresamente y los informes o peritajes externos."
 )

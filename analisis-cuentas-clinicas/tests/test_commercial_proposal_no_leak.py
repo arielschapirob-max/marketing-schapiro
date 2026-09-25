@@ -12,7 +12,7 @@ from docx import Document as DocxDocument
 
 from app.reports.commercial_proposal_docx import generar_propuesta_docx
 from app.reports.commercial_proposal_pdf import generar_propuesta_pdf
-from app.reports.texts import REGLAS_PROPUESTA_EXTERNA
+from app.reports.texts import GASTOS_EXTERNOS, REGLAS_PROPUESTA_EXTERNA
 
 TERMINOS_PROHIBIDOS = [
     "codigo_prestacion",
@@ -43,8 +43,7 @@ def _honorarios(**overrides):
     base = {
         "honorario_fijo_texto": "UF 15",
         "honorario_exito": True,
-        "honorario_exito_texto": "15% del monto recuperado",
-        "gastos_texto": "",
+        "honorario_exito_texto": "15% del beneficio económico obtenido",
         "exclusiones_texto": "",
     }
     base.update(overrides)
@@ -86,7 +85,9 @@ def test_propuesta_incluye_frase_obligatoria_y_ausencia_de_garantia(tmp_path):
     texto = "\n".join(p.text for p in documento.paragraphs)
 
     assert "Del examen preliminar de los antecedentes recibidos" in texto
-    assert "obligación de medios y no de resultado" in texto
+    assert "no asegura un resultado determinado" in texto
+    assert GASTOS_EXTERNOS in texto
+    assert "El encargo se ejecutará con base en los antecedentes que proporcione el cliente" in texto
 
 
 def test_reglas_propuesta_externa_definidas():
