@@ -39,6 +39,17 @@ CAMPOS_GLOBALES_PATRONES = {
     "diagnostico": re.compile(r"(?:diagn[oó]stico)\s*[:#]?\s*([^\n]+)", re.IGNORECASE),
 }
 
+# Líneas de encabezado (RUT, número de cuenta, fecha, etc.) deben excluirse de la
+# extracción de ítems por texto libre: sus valores (ej. un RUT con puntos, o un
+# número de cuenta) pueden calzar accidentalmente con el patrón de montos y
+# generar "ítems fantasma" con cifras que no corresponden a ninguna prestación.
+PATRON_LINEA_ENCABEZADO = re.compile(
+    r"^\s*(?:n[uú]mero\s+de\s+cuenta|n[°º]\s*cuenta|folio|afiliado|paciente|beneficiario|"
+    r"prestador|cl[ií]nica|hospital|centro m[eé]dico|diagn[oó]stico|rut|isapre|"
+    r"fecha(?:\s+de\s+emisi[oó]n)?)\s*[:#]",
+    re.IGNORECASE,
+)
+
 SINONIMOS_COLUMNAS = {
     "codigo_prestacion": ["codigo", "código", "cod prestacion", "cod. prestación", "arancel"],
     "descripcion": [
@@ -134,6 +145,8 @@ def extraer_items_desde_texto(texto: str, metodo: str) -> list[dict]:
     for linea in texto.splitlines():
         linea = linea.strip()
         if len(linea) < 8:
+            continue
+        if PATRON_LINEA_ENCABEZADO.match(linea):
             continue
 
         montos_texto = PATRON_MONTO.findall(linea)

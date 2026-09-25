@@ -58,6 +58,10 @@ def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida:
         fila[7].text = "Sí" if item.aprobado else "No"
 
     documento.add_heading("3. Matriz de hallazgos", level=2)
+    documento.add_paragraph(
+        "Cada fila de la siguiente matriz corresponde a un hallazgo potencialmente discutible "
+        "identificado en la cuenta, sujeto a validación profesional del abogado responsable."
+    )
     tabla_hallazgos = documento.add_table(rows=1, cols=6)
     tabla_hallazgos.style = "Light Grid Accent 1"
     encabezados_h = [

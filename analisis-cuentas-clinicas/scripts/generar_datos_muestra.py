@@ -12,6 +12,10 @@ from pathlib import Path
 
 import docx
 import openpyxl
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 DESTINO = Path(__file__).resolve().parent.parent / "samples"
 DESTINO.mkdir(parents=True, exist_ok=True)
@@ -80,9 +84,53 @@ def generar_docx_muestra() -> Path:
     return ruta
 
 
+def generar_pdf_muestra() -> Path:
+    """Genera una cuenta clínica ficticia en PDF con texto real (no escaneado).
+
+    Incluye un ítem con cobertura parcial (stent coronario, para ejercitar la
+    regla de dispositivos médicos), un ítem 100% no cubierto y un ítem con
+    cobertura total, para probar de punta a punta la extracción desde texto
+    libre (``app.extraction.field_extraction.extraer_items_desde_texto``).
+    """
+    ruta = DESTINO / "cuenta_clinica_ficticia.pdf"
+    doc = SimpleDocTemplate(
+        str(ruta), pagesize=LETTER, topMargin=2 * cm, bottomMargin=2 * cm, leftMargin=2 * cm, rightMargin=2 * cm
+    )
+    estilos = getSampleStyleSheet()
+    normal = estilos["Normal"]
+    titulo = estilos["Heading1"]
+
+    encabezado = [
+        "Fecha de emisión: 15-03-2026",
+        "Afiliado: Paciente de Prueba Ficticio Dos",
+        "RUT: 22.222.222-2",
+        "Isapre: Isapre Consalud",
+        "Prestador: Hospital Clínico Ejemplo",
+        "Número de cuenta: CTA-2026-0099",
+        "Diagnóstico: Síndrome coronario agudo, diagnóstico ficticio de prueba",
+    ]
+    items = [
+        "220305 Stent coronario liberador de fármaco $3.200.000 $1.800.000 $1.400.000",
+        "340210 Insumo clínico no bonificable, valor cobrado $850.000, sin cobertura",
+        "110101 Consulta médica especialidad $45.000 $45.000",
+    ]
+
+    elementos = [Paragraph("Cuenta Clínica (documento ficticio de prueba)", titulo)]
+    for linea in encabezado:
+        elementos.append(Paragraph(linea, normal))
+    elementos.append(Spacer(1, 0.4 * cm))
+    for linea in items:
+        elementos.append(Paragraph(linea, normal))
+
+    doc.build(elementos)
+    return ruta
+
+
 if __name__ == "__main__":
     ruta_xlsx = generar_xlsx_muestra()
     ruta_docx = generar_docx_muestra()
+    ruta_pdf = generar_pdf_muestra()
     print(f"Generado: {ruta_xlsx}")
     print(f"Generado: {ruta_docx}")
+    print(f"Generado: {ruta_pdf}")
     print("\nRecuerde: estos son datos ficticios de prueba. Nunca cargue datos reales en el repositorio.")
