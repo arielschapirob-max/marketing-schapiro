@@ -1,0 +1,42 @@
+# Uso local, un solo usuario, un solo PC: no se expone nada fuera de este
+# computador salvo el puerto 3000 en localhost. Ver INSTALAR_EN_TU_PC.md.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pymelegal
+      POSTGRES_PASSWORD: pymelegal_local_pw
+      POSTGRES_DB: pymelegal
+    volumes:
+      - pymelegal_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pymelegal"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://pymelegal:pymelegal_local_pw@db:5432/pymelegal"
+      APP_URL: "http://localhost:3000"
+      STORAGE_DRIVER: "local"
+      AI_PROVIDER: "mock"
+      OCR_PROVIDER: "mock"
+      EMAIL_PROVIDER: "mock"
+      SEED_DEV_PASSWORD: "PymeLegal#2026"
+    volumes:
+      - pymelegal_data:/data
+      - pymelegal_uploads:/app/storage/uploads
+
+volumes:
+  pymelegal_db:
+  pymelegal_data:
+  pymelegal_uploads:

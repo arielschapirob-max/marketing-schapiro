@@ -1,0 +1,901 @@
+// PymeLegal — esquema de base de datos
+// Ver docs/DATABASE.md para las decisiones de diseño (p. ej. por qué los
+// "hallazgos" de tratamientos/tecnologías/proveedores/etc. se consolidan en
+// un único modelo `Finding` en vez de once tablas casi idénticas).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum OrgRole {
+  ADMIN
+  LAWYER
+  REVIEWER
+  READER
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum DiagnosisStatus {
+  DRAFT
+  FILES_UPLOADED
+  ANALYSIS_PENDING
+  ANALYSIS_RUNNING
+  ANALYSIS_COMPLETED
+  QUESTIONNAIRE_GENERATED
+  IN_REVIEW
+  APPROVED
+  EXPORTED
+  ARCHIVED
+  ERROR
+}
+
+enum CertaintyLevel {
+  CONFIRMADO
+  PROBABLE
+  NO_DETERMINADO
+  INFERIDO
+  CONTRADICTORIO
+}
+
+enum RuleApplicability {
+  APLICABLE
+  POTENCIALMENTE_APLICABLE
+  NO_DETERMINADA
+  NO_IDENTIFICADA
+  REQUIERE_VALIDACION_JURIDICA
+}
+
+enum RuleStatus {
+  VALIDADA
+  PENDIENTE_REVISION
+  REQUIERE_VALIDACION_JURIDICA
+  DESACTUALIZADA
+  DEROGADA
+  EXPERIMENTAL
+}
+
+enum RuleRegime {
+  VIGENTE
+  FUTURO
+  TRANSICION
+}
+
+enum FileKind {
+  TRANSCRIPT
+  DOCUMENT
+  IMAGE
+  OTHER
+}
+
+enum FileStatus {
+  UPLOADED
+  SCANNING
+  CLEAN
+  QUARANTINED
+  PROCESSED
+  ERROR
+  DELETED
+}
+
+enum FindingType {
+  PROCESSING_ACTIVITY
+  DATA_SUBJECT_CATEGORY
+  DATA_CATEGORY
+  SENSITIVE_DATA
+  TECHNOLOGY
+  PROVIDER
+  THIRD_PARTY
+  INTERNATIONAL_TRANSFER
+  INCIDENT
+  SECURITY_MEASURE
+  RETENTION_PRACTICE
+  EXISTING_DOCUMENT
+  RIGHTS_MANAGEMENT
+  BUSINESS_ACTIVITY
+  SECTOR
+}
+
+enum EvidenceSourceType {
+  TRANSCRIPT
+  DOCUMENT
+  WEB
+  MANUAL
+}
+
+enum AnswerType {
+  SHORT_TEXT
+  LONG_TEXT
+  NUMBER
+  DATE
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  YES_NO
+  YES_NO_UNKNOWN
+  TABLE
+  FILE
+  MATRIX
+  ADDRESS
+  PERSON_OR_PROVIDER
+  STRUCTURED_LEGAL
+}
+
+enum QuestionStatus {
+  ACTIVE
+  DRAFT
+  DEPRECATED
+  AI_PROPOSED
+}
+
+enum QuestionnaireStatus {
+  DRAFT
+  GENERATED
+  IN_REVIEW
+  APPROVED
+}
+
+enum ExportFormat {
+  PDF
+  DOCX
+  JSON
+  CSV
+}
+
+enum ValidationTaskType {
+  LEGAL
+  TECHNICAL
+  CLIENT_CONFIRMATION
+}
+
+enum ValidationTaskStatus {
+  OPEN
+  RESOLVED
+}
+
+enum WebAnalysisStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  ERROR
+}
+
+enum AIExecutionKind {
+  EXTRACTION
+  CLASSIFICATION
+  QUESTION_GENERATION
+  GAP_DETECTION
+  CONTRADICTION_DETECTION
+  COVERAGE_REVIEW
+  WORDING_REVIEW
+  SOURCE_REVIEW
+  EXECUTIVE_SUMMARY
+  EXPLANATION
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios, autenticación y auditoría
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  isSuperAdmin Boolean  @default(false)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships        OrganizationMember[]
+  createdDiagnoses   Diagnosis[]           @relation("DiagnosisCreatedBy")
+  uploadedFiles      File[]                @relation("FileUploadedBy")
+  auditEvents        AuditEvent[]
+  aiExecutions       AIExecution[]
+  answers            QuestionnaireAnswer[]
+  approvals          Approval[]
+  exports            Export[]
+  resolvedReviews    ReviewFinding[]       @relation("ReviewFindingResolvedBy")
+  resolvedTasks      ValidationTask[]      @relation("ValidationTaskResolvedBy")
+  notifications      Notification[]
+  sessions           Session[]
+  verificationTokens VerificationToken[]
+  reviewedQuestions  Question[]            @relation("QuestionReviewer")
+  reviewedRules      LegalRule[]           @relation("LegalRuleReviewer")
+
+  @@index([email])
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  ip        String?
+  userAgent String?
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  purpose   String // "password_reset" | "email_verify"
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  @@index([userId])
+}
+
+model AuditEvent {
+  id             String        @id @default(cuid())
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  diagnosisId    String?
+  diagnosis      Diagnosis?    @relation(fields: [diagnosisId], references: [id], onDelete: SetNull)
+  action         String
+  entityType     String
+  entityId       String?
+  metadata       Json?
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId])
+  @@index([diagnosisId])
+  @@index([userId])
+  @@index([action])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+// ---------------------------------------------------------------------------
+// Organizaciones
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id                    String             @id @default(cuid())
+  legalName             String
+  commercialName        String?
+  identifier            String? // RUT u otro
+  country               String             @default("Chile")
+  region                String?
+  comuna                String?
+  address               String?
+  website               String?
+  email                 String?
+  phone                 String?
+  representative        String?
+  economicActivity      String[]           @default([])
+  sectorKeys            String[]           @default([])
+  approximateSize       String? // "micro" | "pequena" | "mediana" | "grande"
+  employeeCount         Int?
+  estimatedDataSubjects Int?
+  status                OrganizationStatus @default(ACTIVE)
+  internalNotes         String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  members     OrganizationMember[]
+  diagnoses   Diagnosis[]
+  auditEvents AuditEvent[]
+
+  @@index([status])
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           OrgRole
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Diagnósticos
+// ---------------------------------------------------------------------------
+
+model Diagnosis {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdById    String
+  createdBy      User            @relation("DiagnosisCreatedBy", fields: [createdById], references: [id])
+  title          String
+  status         DiagnosisStatus @default(DRAFT)
+  regimeMode     RuleRegime      @default(VIGENTE) // vigente | futuro | transición, elegido para este diagnóstico
+  targetDate     DateTime        @default(now()) // fecha a la cual se evalúa la vigencia normativa
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  archivedAt     DateTime?
+
+  files            File[]
+  transcripts      MeetingTranscript[]
+  webAnalyses      WebAnalysis[]
+  profile          OrganizationProfile?
+  findings         Finding[]
+  evidence         Evidence[]
+  diagnosisSectors DiagnosisSector[]
+  legalEvaluations LegalEvaluation[]
+  questionnaires   Questionnaire[]
+  reviews          Review[]
+  approvals        Approval[]
+  exports          Export[]
+  auditEvents      AuditEvent[]
+  aiExecutions     AIExecution[]
+  validationTasks  ValidationTask[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Archivos y procesamiento documental
+// ---------------------------------------------------------------------------
+
+model File {
+  id             String     @id @default(cuid())
+  diagnosisId    String
+  diagnosis      Diagnosis  @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  kind           FileKind
+  originalName   String
+  mimeType       String
+  extension      String
+  sizeBytes      Int
+  checksumSha256 String
+  storageKey     String
+  status         FileStatus @default(UPLOADED)
+  isDuplicate    Boolean    @default(false)
+  duplicateOfId  String?
+  uploadedById   String
+  uploadedBy     User       @relation("FileUploadedBy", fields: [uploadedById], references: [id])
+  errorMessage   String?
+  createdAt      DateTime   @default(now())
+  deletedAt      DateTime?
+
+  extracted        ExtractedDocument?
+  transcriptSource MeetingTranscript[]
+
+  @@index([diagnosisId])
+  @@index([checksumSha256])
+}
+
+model ExtractedDocument {
+  id             String   @id @default(cuid())
+  fileId         String   @unique
+  file           File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  text           String
+  language       String?
+  docType        String? // contrato | politica | anexo | formulario | otro
+  usedOcr        Boolean  @default(false)
+  ocrProvider    String?
+  confidence     Float?
+  pageCount      Int?
+  pages          Json? // [{page, text}]
+  classification Json? // señales detectadas: cláusulas DP, encargados, transferencias, etc.
+  createdAt      DateTime @default(now())
+
+  @@index([fileId])
+}
+
+model MeetingTranscript {
+  id             String    @id @default(cuid())
+  diagnosisId    String
+  diagnosis      Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  fileId         String?
+  file           File?     @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  rawText        String
+  status         String    @default("pending") // pending | processed | error
+  analysisResult Json?
+  createdAt      DateTime  @default(now())
+  processedAt    DateTime?
+
+  @@index([diagnosisId])
+}
+
+// ---------------------------------------------------------------------------
+// Análisis web
+// ---------------------------------------------------------------------------
+
+model WebAnalysis {
+  id            String            @id @default(cuid())
+  diagnosisId   String
+  diagnosis     Diagnosis         @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  url           String
+  status        WebAnalysisStatus @default(PENDING)
+  startedAt     DateTime          @default(now())
+  finishedAt    DateTime?
+  pagesVisited  Int               @default(0)
+  errorMessage  String?
+  resultSummary Json?
+
+  findings WebFinding[]
+
+  @@index([diagnosisId])
+}
+
+model WebFinding {
+  id                 String         @id @default(cuid())
+  webAnalysisId      String
+  webAnalysis        WebAnalysis    @relation(fields: [webAnalysisId], references: [id], onDelete: Cascade)
+  url                String
+  type               String // pagina | formulario | politica_privacidad | cookies | tracker | tecnologia | proveedor ...
+  description        String
+  technology         String?
+  evidence           String
+  certainty          CertaintyLevel
+  possibleProvider   String?
+  possibleProcessing String?
+  possibleTransfer   Boolean        @default(false)
+  possibleRisk       String?
+  requiresValidation Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+
+  @@index([webAnalysisId])
+}
+
+// ---------------------------------------------------------------------------
+// Perfil organizacional estructurado (sección 6 del encargo)
+// ---------------------------------------------------------------------------
+
+model OrganizationProfile {
+  id          String    @id @default(cuid())
+  diagnosisId String    @unique
+  diagnosis   Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  version     Int       @default(1)
+  data        Json // snapshot completo del esquema de la sección 6
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Hallazgo genérico y trazable — consolida ProcessingActivity, DataSubjectCategory,
+// DataCategory, SensitiveDataCategory, Technology, Provider, ThirdParty,
+// InternationalTransfer, Incident, SecurityMeasure, RetentionPractice, etc.
+model Finding {
+  id                         String             @id @default(cuid())
+  diagnosisId                String
+  diagnosis                  Diagnosis          @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  type                       FindingType
+  description                String
+  value                      Json
+  certainty                  CertaintyLevel
+  sourceType                 EvidenceSourceType
+  sourceDocumentId           String?
+  sourceLocation             String? // página/párrafo/línea/URL
+  extractedAt                DateTime           @default(now())
+  ruleId                     String?
+  rule                       LegalRule?         @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  relatedNorm                String?
+  relatedArticle             String?
+  notes                      String?
+  requiresLegalValidation    Boolean            @default(false)
+  requiresClientConfirmation Boolean            @default(false)
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
+
+  evidence Evidence[]
+
+  @@index([diagnosisId, type])
+  @@index([certainty])
+}
+
+model Evidence {
+  id          String             @id @default(cuid())
+  diagnosisId String
+  diagnosis   Diagnosis          @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  findingId   String?
+  finding     Finding?           @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  sourceType  EvidenceSourceType
+  sourceId    String? // fileId, transcriptId o url según sourceType
+  excerpt     String
+  location    Json? // {page, paragraph, line, url}
+  createdAt   DateTime           @default(now())
+
+  @@index([diagnosisId])
+  @@index([findingId])
+}
+
+// ---------------------------------------------------------------------------
+// Motor jurídico
+// ---------------------------------------------------------------------------
+
+model LegalSource {
+  id          String   @id @default(cuid())
+  name        String
+  authority   String
+  url         String
+  officialRef String?
+  retrievedAt DateTime @default(now())
+  notes       String?
+
+  rules LegalRule[]
+
+  @@index([authority])
+}
+
+model LegalRule {
+  id                   String       @id @default(cuid())
+  code                 String       @unique
+  name                 String
+  description          String
+  jurisdiction         String       @default("Chile")
+  subject              String // materia
+  norm                 String
+  article              String?
+  clause               String?
+  status               RuleStatus   @default(PENDIENTE_REVISION)
+  regime               RuleRegime   @default(VIGENTE)
+  startDate            DateTime?
+  endDate              DateTime?
+  version              Int          @default(1)
+  sourceId             String?
+  source               LegalSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  officialUrl          String?
+  excerpt              String?
+  scope                String?
+  activationConditions Json // reglas de activación evaluadas contra el perfil
+  result               Json // {applicability, obligations, references}
+  risk                 String?
+  severity             String? // bajo | medio | alto | critico
+  relatedQuestionCodes String[]     @default([])
+  requiredEvidence     String[]     @default([])
+  reviewDate           DateTime?
+  reviewerId           String?
+  reviewer             User?        @relation("LegalRuleReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  validationStatus     String       @default("REQUIERE_VALIDACION_JURIDICA")
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  versions    LegalRuleVersion[]
+  sectors     SectorLegalRule[]
+  findings    Finding[]
+  evaluations LegalEvaluation[]
+
+  @@index([regime, status])
+  @@index([subject])
+}
+
+model LegalRuleVersion {
+  id         String    @id @default(cuid())
+  ruleId     String
+  rule       LegalRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  version    Int
+  snapshot   Json
+  changedAt  DateTime  @default(now())
+  changedBy  String?
+  changeNote String?
+
+  @@unique([ruleId, version])
+}
+
+model LegalEvaluation {
+  id            String            @id @default(cuid())
+  diagnosisId   String
+  diagnosis     Diagnosis         @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  ruleId        String
+  rule          LegalRule         @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  regime        RuleRegime
+  applicability RuleApplicability
+  reasoning     String
+  evidenceRefs  Json // ids de Finding/Evidence que activaron la regla
+  certainty     CertaintyLevel
+  createdAt     DateTime          @default(now())
+
+  @@unique([diagnosisId, ruleId, regime])
+}
+
+model Sector {
+  id                   String   @id @default(cuid())
+  key                  String   @unique
+  name                 String
+  description          String
+  activationIndicators String[] @default([])
+  commonProcessing     String[] @default([])
+  commonSubjects       String[] @default([])
+  dataCategories       String[] @default([])
+  sensitiveData        String[] @default([])
+  commonProviders      String[] @default([])
+  commonRisks          String[] @default([])
+  officialLinks        String[] @default([])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  legalRules       SectorLegalRule[]
+  questions        QuestionSector[]
+  diagnosisSectors DiagnosisSector[]
+}
+
+model SectorLegalRule {
+  sectorId String
+  sector   Sector    @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  ruleId   String
+  rule     LegalRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@id([sectorId, ruleId])
+}
+
+model DiagnosisSector {
+  id          String         @id @default(cuid())
+  diagnosisId String
+  diagnosis   Diagnosis      @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  sectorId    String
+  sector      Sector         @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  certainty   CertaintyLevel
+  rationale   String?
+  createdAt   DateTime       @default(now())
+
+  @@unique([diagnosisId, sectorId])
+}
+
+// ---------------------------------------------------------------------------
+// Motor de preguntas y cuestionario
+// ---------------------------------------------------------------------------
+
+model Question {
+  id                    String         @id @default(cuid())
+  code                  String         @unique
+  category              String
+  subcategory           String?
+  text                  String
+  answerType            AnswerType
+  required              Boolean        @default(false)
+  processingTag         String?
+  trigger               Json? // condiciones de activación
+  followUp              Json? // ids de preguntas dependientes
+  risk                  String?
+  norm                  String?
+  article               String?
+  source                String?
+  requiredEvidence      String[]       @default([])
+  version               Int            @default(1)
+  order                 Int            @default(0)
+  help                  String?
+  lawyerExplanation     String?
+  clientExplanation     String?
+  options               Json?
+  validation            Json?
+  visibilityCondition   Json?
+  requirednessCondition Json?
+  dependency            Json?
+  justification         String?
+  legalMatter           String?
+  riskLevel             String?
+  requiresDocument      Boolean        @default(false)
+  allowsDontKnow        Boolean        @default(true)
+  allowsNotApplicable   Boolean        @default(true)
+  status                QuestionStatus @default(ACTIVE)
+  author                String?
+  reviewDate            DateTime?
+  reviewerId            String?
+  reviewer              User?          @relation("QuestionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  sectors                QuestionSector[]
+  versions               QuestionVersion[]
+  questionnaireQuestions QuestionnaireQuestion[]
+
+  @@index([category])
+  @@index([status])
+}
+
+model QuestionSector {
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  sectorId   String
+  sector     Sector   @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, sectorId])
+}
+
+model QuestionVersion {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  version    Int
+  snapshot   Json
+  changedAt  DateTime @default(now())
+  changedBy  String?
+
+  @@unique([questionId, version])
+}
+
+model Questionnaire {
+  id          String              @id @default(cuid())
+  diagnosisId String
+  diagnosis   Diagnosis           @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  version     Int                 @default(1)
+  status      QuestionnaireStatus @default(DRAFT)
+  generatedAt DateTime?
+  approvedAt  DateTime?
+
+  questions QuestionnaireQuestion[]
+  reviews   Review[]
+  approvals Approval[]
+  exports   Export[]
+
+  @@index([diagnosisId])
+}
+
+model QuestionnaireQuestion {
+  id                  String        @id @default(cuid())
+  questionnaireId     String
+  questionnaire       Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  questionId          String
+  question            Question      @relation(fields: [questionId], references: [id])
+  order               Int
+  isActive            Boolean       @default(true)
+  isRequiredOverride  Boolean?
+  sourceNote          String?
+  aiProposed          Boolean       @default(false)
+  addedByLawyer       Boolean       @default(false)
+  discardedReason     String?
+  requiresLegalReview Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  answers QuestionnaireAnswer[]
+
+  @@unique([questionnaireId, questionId])
+  @@index([questionnaireId])
+}
+
+model QuestionnaireAnswer {
+  id                      String                @id @default(cuid())
+  questionnaireQuestionId String
+  questionnaireQuestion   QuestionnaireQuestion @relation(fields: [questionnaireQuestionId], references: [id], onDelete: Cascade)
+  value                   Json?
+  notApplicable           Boolean               @default(false)
+  dontKnow                Boolean               @default(false)
+  answeredById            String?
+  answeredBy              User?                 @relation(fields: [answeredById], references: [id], onDelete: SetNull)
+  answeredAt              DateTime              @default(now())
+
+  @@index([questionnaireQuestionId])
+}
+
+// ---------------------------------------------------------------------------
+// Revisión, aprobación, exportación
+// ---------------------------------------------------------------------------
+
+model Review {
+  id              String         @id @default(cuid())
+  diagnosisId     String
+  diagnosis       Diagnosis      @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  questionnaireId String?
+  questionnaire   Questionnaire? @relation(fields: [questionnaireId], references: [id], onDelete: SetNull)
+  runAt           DateTime       @default(now())
+  passed          Boolean        @default(false)
+  summary         Json
+
+  findings ReviewFinding[]
+
+  @@index([diagnosisId])
+}
+
+model ReviewFinding {
+  id            String    @id @default(cuid())
+  reviewId      String
+  review        Review    @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  checkCode     String // CHECK1..CHECK20
+  checkName     String
+  passed        Boolean
+  severity      String // blocking | advisory
+  description   String
+  relatedEntity Json?
+  resolvedAt    DateTime?
+  resolvedById  String?
+  resolvedBy    User?     @relation("ReviewFindingResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([reviewId])
+}
+
+model Approval {
+  id              String        @id @default(cuid())
+  diagnosisId     String
+  diagnosis       Diagnosis     @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  approvedById    String
+  approvedBy      User          @relation(fields: [approvedById], references: [id])
+  approvedAt      DateTime      @default(now())
+  notes           String?
+  signatureHash   String
+
+  @@index([diagnosisId])
+}
+
+model Export {
+  id              String         @id @default(cuid())
+  diagnosisId     String
+  diagnosis       Diagnosis      @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  questionnaireId String?
+  questionnaire   Questionnaire? @relation(fields: [questionnaireId], references: [id], onDelete: SetNull)
+  format          ExportFormat
+  generatedById   String
+  generatedBy     User           @relation(fields: [generatedById], references: [id])
+  generatedAt     DateTime       @default(now())
+  storageKey      String
+  checksumSha256  String
+
+  @@index([diagnosisId])
+}
+
+// ---------------------------------------------------------------------------
+// IA, validación y trazabilidad
+// ---------------------------------------------------------------------------
+
+model AIExecution {
+  id            String          @id @default(cuid())
+  diagnosisId   String?
+  diagnosis     Diagnosis?      @relation(fields: [diagnosisId], references: [id], onDelete: SetNull)
+  kind          AIExecutionKind
+  provider      String
+  model         String
+  promptVersion String
+  executedAt    DateTime        @default(now())
+  inputSummary  String
+  output        Json
+  validations   Json
+  errors        Json?
+  sourcesUsed   Json?
+  executedById  String?
+  executedBy    User?           @relation(fields: [executedById], references: [id], onDelete: SetNull)
+  durationMs    Int?
+
+  @@index([diagnosisId])
+}
+
+model ValidationTask {
+  id            String               @id @default(cuid())
+  diagnosisId   String
+  diagnosis     Diagnosis            @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  type          ValidationTaskType
+  description   String
+  status        ValidationTaskStatus @default(OPEN)
+  relatedEntity Json?
+  blocking      Boolean              @default(false)
+  createdAt     DateTime             @default(now())
+  resolvedAt    DateTime?
+  resolvedById  String?
+  resolvedBy    User?                @relation("ValidationTaskResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([diagnosisId, status])
+}
