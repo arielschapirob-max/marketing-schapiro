@@ -19,7 +19,9 @@ export interface PersonalizedQuestionnaireRequest {
     commercialName: string | null;
     website: string | null;
     contactName: string | null;
+    economicActivity: string[];
   };
+  preparedByName: string;
   transcriptExcerpts: string[];
   webFindingSummaries: string[];
   existingFindingSummaries: string[];

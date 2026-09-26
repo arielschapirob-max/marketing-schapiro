@@ -207,23 +207,52 @@ function detectUnknowns(text: string): string[] {
 function buildMockPersonalizedQuestionnaire(req: PersonalizedQuestionnaireRequest): PersonalizedQuestionnaireOutput {
   const relevant = ALL_QUESTIONS.filter((q) => !q.sectorKeys || q.sectorKeys.some((k) => req.sectorNames.includes(k)) || req.sectorNames.length === 0);
 
-  const byCategory = new Map<string, string[]>();
+  const byCategory = new Map<string, typeof relevant>();
   for (const q of relevant) {
     const list = byCategory.get(q.category) ?? [];
-    list.push(q.text.endsWith('?') ? q.text : `${q.text}?`);
+    list.push(q);
     byCategory.set(q.category, list);
   }
 
-  const modules = [...byCategory.entries()].map(([title, questions]) => ({
+  const modules = [...byCategory.entries()].map(([title, questions], moduleIndex) => ({
     title,
+    areaResponsible: 'Por definir',
+    phase: 'FASE_1_ESENCIAL' as const,
     intro: `Preguntas del banco general relacionadas con "${title}".`,
-    questions,
+    questions: questions.map((q, i) => ({
+      number: `${moduleIndex + 1}.${i + 1}`,
+      text: q.text.endsWith('?') ? q.text : `${q.text}?`,
+      type: 'abierta' as const,
+    })),
   }));
 
+  const mockGreeting = `[MODO MOCK: esta portada, presentación y el resto del cuestionario NO fueron redactados por un modelo de lenguaje real — el proveedor de IA configurado es "mock". Lo que sigue es el banco de preguntas genérico agrupado por categoría, sin la personalización basada en la transcripción y el sitio web que ofrece un proveedor de IA real. Configure AI_PROVIDER=anthropic u openai con una clave válida para obtener la redacción personalizada.]`;
+
   return {
-    greeting: `Hola ${req.organizationContext.contactName ?? req.organizationContext.legalName}. [MODO MOCK: este saludo y el resto del cuestionario NO fueron redactados por un modelo de lenguaje real — el proveedor de IA configurado es "mock". Lo que sigue es el banco de preguntas genérico agrupado por categoría, sin la personalización basada en la transcripción y el sitio web que ofrece un proveedor de IA real. Configure AI_PROVIDER=anthropic u openai con una clave válida para obtener la redacción personalizada.]`,
+    coverPage: {
+      title: 'CUESTIONARIO DE DIAGNÓSTICO',
+      subtitle: 'Cuestionario de diagnóstico jurídico y operativo en protección de datos personales',
+      lawReference: 'Ley N.º 21.719 sobre protección de datos personales',
+      preparedFor: req.organizationContext.commercialName ?? req.organizationContext.legalName,
+      contacts: req.organizationContext.contactName ?? 'No informado',
+    },
+    presentation: [mockGreeting, 'La información que nos entregues es confidencial y se usa únicamente para preparar tu diagnóstico.'],
+    howToRespond: ['Responde con la realidad, no con lo esperable.', 'Una respuesta "No" o "No sé" también es información válida.'],
     confidentialityNote: 'La información que nos entregues es confidencial y se usa únicamente para preparar tu diagnóstico.',
-    modules: modules.length > 0 ? modules : [{ title: 'General', intro: 'No hay preguntas aplicables detectadas.', questions: ['¿Hay algo relevante sobre el tratamiento de datos personales que quieras contarnos?'] }],
+    glossary: [],
+    modules:
+      modules.length > 0
+        ? modules
+        : [
+            {
+              title: 'General',
+              areaResponsible: 'Por definir',
+              phase: 'FASE_1_ESENCIAL' as const,
+              intro: 'No hay preguntas aplicables detectadas.',
+              questions: [{ number: '1.1', text: '¿Hay algo relevante sobre el tratamiento de datos personales que quieras contarnos?', type: 'abierta' as const }],
+            },
+          ],
+    documentChecklist: [],
     closingNote: 'Envíanos el cuestionario respondido por el mismo medio en que lo recibiste.',
   };
 }

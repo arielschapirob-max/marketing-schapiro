@@ -21,31 +21,57 @@ el esquema indicado. Reglas estrictas:
 - No emitas conclusiones jurídicas definitivas: solo hallazgos descriptivos y su nivel de certeza.
 - No agregues texto fuera del JSON.`;
 
-const PERSONALIZED_QUESTIONNAIRE_SYSTEM_PROMPT = `Eres un asistente de un abogado chileno especializado en protección de
-datos personales (Ley N.º 19.628 y Ley N.º 21.719). Tu tarea es redactar un cuestionario de diagnóstico
-personalizado, en español de Chile, que el abogado enviará DIRECTAMENTE al cliente para que lo responda.
-Debes devolver EXCLUSIVAMENTE un objeto JSON que cumpla el esquema indicado. Reglas estrictas:
-- Usa un tono cercano, profesional y en segunda persona (tutea al cliente), como si el abogado le
-  escribiera directamente. Si se entrega un nombre de contacto, salúdalo por su nombre.
-- CADA pregunta debe referirse a un hecho, herramienta, cifra, nombre o práctica que APAREZCA
-  LITERALMENTE en la transcripción o en los hallazgos del sitio web entregados como evidencia. Nunca
-  inventes un proveedor, monto, plataforma o dato que no esté en esa evidencia. Si quieres preguntar
-  por algo que no está confirmado en la evidencia pero es razonable sospechar (p. ej., "¿usan algún
-  sistema para guardar las respuestas del formulario?"), formúlalo igualmente como pregunta abierta,
-  nunca como una afirmación de hecho.
-- Todas las preguntas deben tener forma interrogativa (terminar en "?"), nunca ser una afirmación.
-  El cuestionario pregunta, no concluye — no emitas conclusiones jurídicas ni afirmes que algo
-  "infringe" o "cumple" una norma.
-- No cites artículos de ley ni asesores jurídicos: este documento solo recopila información del
-  negocio del cliente, no contiene análisis legal.
-- Organiza el contenido en módulos temáticos (mínimo 6, máximo 20 según la riqueza de la evidencia
-  disponible), cada uno con un título corto, una frase de introducción, y una lista de preguntas
-  numeradas dentro de ese módulo. No incluyas el número de módulo en el título (el sistema lo agrega
-  automáticamente); usa solo el nombre del tema (ej. "Canal WhatsApp y mensajería").
-- El campo "greeting" es el saludo inicial y la explicación de para qué sirve el cuestionario. El
-  campo "confidentialityNote" es una frase breve sobre confidencialidad. El campo "closingNote" pide
-  devolver el cuestionario respondido.
-- No agregues texto fuera del JSON.`;
+const PERSONALIZED_QUESTIONNAIRE_SYSTEM_PROMPT = `Eres un abogado chileno especializado en protección de datos
+personales (Ley N.º 19.628 y Ley N.º 21.719), redactando un cuestionario de diagnóstico de nivel profesional
+que se enviará DIRECTAMENTE al cliente para que lo responda y lo devuelva. Debes devolver EXCLUSIVAMENTE un
+objeto JSON que cumpla el esquema indicado — nada de texto fuera del JSON.
+
+ESTÁNDAR DE CALIDAD (no un formulario genérico): el documento debe leerse como si un abogado que estudió a
+fondo la reunión y el sitio web de ESTE cliente específico lo hubiera escrito a mano para él. Usa el nombre
+real del negocio, su giro real, las herramientas/plataformas/proveedores mencionados por su nombre propio, las
+cifras concretas mencionadas (montos, cantidades, plazos), y los ejemplos reales de su operación (nombres de
+productos, de clientes de portafolio, de sistemas internos) — siempre que aparezcan literalmente en la
+evidencia entregada. Un cuestionario que podría enviarse sin cambios a cualquier empresa del mismo rubro está
+mal hecho.
+
+REGLA ANTI-ALUCINACIÓN (no negociable): cada mención de un hecho, herramienta, cifra, nombre propio o práctica
+debe aparecer LITERALMENTE en la transcripción, en los hallazgos del sitio web, o en los hallazgos ya
+extraídos que se entregan como evidencia. Nunca inventes un proveedor, monto, plataforma o dato que no esté en
+esa evidencia. Si quieres indagar algo que no está confirmado pero es razonable sospechar dado el giro del
+negocio, formúlalo igual como pregunta abierta genuina (nunca como una afirmación de hecho, y nunca fingiendo
+que ya sabes la respuesta).
+
+FORMA:
+- Cada pregunta "abierta" debe tener forma interrogativa real (terminar en "?"), nunca ser una afirmación.
+  El cuestionario pregunta, no concluye — no emitas conclusiones jurídicas ni afirmes que algo "infringe" o
+  "cumple" una norma. No cites artículos de ley: este documento solo recopila información del negocio.
+- Usa también preguntas "cerradas" quirúrgicamente elegidas (con 2 a 5 opciones tipo checkbox, más "No sé"
+  cuando aplique) para los puntos donde una respuesta acotada basta — igual que alternarías entre pregunta
+  abierta y de alternativas al conversar con el cliente. Marca "allowsDetail: true" si conviene dejar espacio
+  para explicar la opción elegida.
+- Organiza el contenido en 8 a 16 módulos temáticos específicos del negocio real (no genéricos como
+  "Organización" a secas: preferible algo como "La ficha de brief (formulario de ingreso)" o "Plataforma de
+  órdenes digitales de derivadores" cuando la evidencia lo permite). Cada módulo lleva: título corto (sin
+  numeración, el sistema la agrega), "areaResponsible" (a qué área del cliente le correspondería responder,
+  p. ej. "Gerencia", "Tecnología", "Administración" — infiere según el contenido), "phase"
+  ("FASE_1_ESENCIAL" para lo indispensable para un diagnóstico preliminar, "FASE_2_AMPLIACION" para lo
+  complementario), una frase de introducción, y preguntas numeradas "N.M" dentro del módulo.
+- "coverPage": title ("CUESTIONARIO DE DIAGNÓSTICO"), subtitle (una frase describiendo el propósito),
+  lawReference ("Ley N.º 21.719 sobre protección de datos personales"), preparedFor (nombre del cliente, con
+  una frase breve entre paréntesis describiendo su giro si se conoce), contacts (nombre(s) de contacto si se
+  conocen, si no "No informado").
+- "presentation": 2 a 4 párrafos como los de una carta de presentación real: qué es este cuestionario, por qué
+  se diseñó específicamente para la operación real de este cliente (menciona 2-3 detalles concretos de su
+  negocio aquí), y qué se hará con las respuestas.
+- "howToRespond": 3 a 6 instrucciones breves sobre cómo completar el documento (que "No sé" es una respuesta
+  válida, que se puede adjuntar documentos, etc.).
+- "confidentialityNote": una frase sobre confidencialidad de la información entregada.
+- "glossary": 5 a 15 términos técnicos o del rubro del cliente que aparezcan en las preguntas y que un no
+  especialista podría no conocer (p. ej. si el rubro es salud: "ficha clínica"; si es tecnológico: términos
+  como "encargado del tratamiento", "cifrado"). Vacío si no aplica ningún término especializado.
+- "documentChecklist": lista de documentos concretos que convendría pedir que el cliente adjunte (contratos,
+  políticas, capturas de pantalla) dados los hallazgos — vacío si no hay ninguno claro.
+- "closingNote": pide devolver el cuestionario respondido.`;
 
 /**
  * Proveedor "en vivo" para Anthropic/OpenAI. Requiere AI_API_KEY configurada.
@@ -70,7 +96,7 @@ export function createLiveAIProvider(): AIProvider {
         },
         body: JSON.stringify({
           model: env.AI_MODEL,
-          max_tokens: 4096,
+          max_tokens: 8192,
           system: systemPrompt,
           messages: [{ role: 'user', content: prompt }],
         }),
@@ -100,6 +126,7 @@ export function createLiveAIProvider(): AIProvider {
         },
         body: JSON.stringify({
           model: env.AI_MODEL,
+          max_tokens: 8192,
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: systemPrompt },
@@ -148,7 +175,9 @@ export function createLiveAIProvider(): AIProvider {
       return parsed.data;
     },
     async generatePersonalizedQuestionnaire(req: PersonalizedQuestionnaireRequest): Promise<PersonalizedQuestionnaireOutput> {
-      const prompt = `Cliente: ${req.organizationContext.legalName}${req.organizationContext.commercialName ? ` (nombre comercial: ${req.organizationContext.commercialName})` : ''}
+      const prompt = `Preparado por: ${req.preparedByName}
+Cliente: ${req.organizationContext.legalName}${req.organizationContext.commercialName ? ` (nombre comercial: ${req.organizationContext.commercialName})` : ''}
+Giro / actividad económica declarada: ${req.organizationContext.economicActivity.join(', ') || 'no informado'}
 Sitio web: ${req.organizationContext.website ?? 'no informado'}
 Persona de contacto: ${req.organizationContext.contactName ?? 'no informada'}
 Sectores detectados: ${req.sectorNames.join(', ') || 'ninguno aún'}
@@ -168,7 +197,17 @@ Otros hallazgos ya extraídos del diagnóstico:
 ${req.existingFindingSummaries.join('\n') || '(ninguno)'}
 """
 
-Devuelve el JSON con la forma: { "greeting": "...", "confidentialityNote": "...", "modules": [{ "title": "...", "intro": "...", "questions": ["...", "..."] }], "closingNote": "..." }.`;
+Devuelve el JSON con esta forma exacta (los "..." son ejemplos de contenido, no literal):
+{
+  "coverPage": { "title": "CUESTIONARIO DE DIAGNÓSTICO", "subtitle": "...", "lawReference": "Ley N.º 21.719 sobre protección de datos personales", "preparedFor": "...", "contacts": "..." },
+  "presentation": ["párrafo 1", "párrafo 2"],
+  "howToRespond": ["instrucción 1", "instrucción 2"],
+  "confidentialityNote": "...",
+  "glossary": [{ "term": "...", "definition": "..." }],
+  "modules": [{ "title": "...", "areaResponsible": "...", "phase": "FASE_1_ESENCIAL", "intro": "...", "questions": [{ "number": "1.1", "text": "...?", "type": "abierta" }, { "number": "1.2", "text": "...?", "type": "cerrada", "options": ["Sí", "No", "No sé"], "allowsDetail": true }] }],
+  "documentChecklist": ["documento 1"],
+  "closingNote": "..."
+}`;
 
       const raw = await callModel(PERSONALIZED_QUESTIONNAIRE_SYSTEM_PROMPT, prompt);
       const parsedJson = parseJsonOrThrow(raw);

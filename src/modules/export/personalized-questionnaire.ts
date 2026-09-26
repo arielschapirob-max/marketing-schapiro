@@ -27,6 +27,7 @@ export async function generatePersonalizedQuestionnaireExport(diagnosisId: strin
       diagnosisSectors: { include: { sector: true } },
     },
   });
+  const generatedBy = await db.user.findUniqueOrThrow({ where: { id: generatedById } });
 
   const transcriptExcerpts = diagnosis.transcripts.map((t) => t.rawText.slice(0, MAX_TRANSCRIPT_EXCERPT_CHARS));
 
@@ -46,7 +47,9 @@ export async function generatePersonalizedQuestionnaireExport(diagnosisId: strin
         commercialName: diagnosis.organization.commercialName,
         website: diagnosis.organization.website,
         contactName: diagnosis.organization.representative,
+        economicActivity: diagnosis.organization.economicActivity,
       },
+      preparedByName: generatedBy.name,
       transcriptExcerpts,
       webFindingSummaries,
       existingFindingSummaries,
@@ -60,6 +63,7 @@ export async function generatePersonalizedQuestionnaireExport(diagnosisId: strin
     organizationCommercialName: diagnosis.organization.commercialName,
     organizationTagline: diagnosis.organization.economicActivity[0] ?? null,
     organizationWebsite: diagnosis.organization.website,
+    preparedByName: generatedBy.name,
     output,
   });
 

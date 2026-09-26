@@ -58,21 +58,32 @@ interno de preguntas/respuestas dentro de la app).
 
 - **Entrada**: extractos de la transcripción, resúmenes de `WebFinding` y `Finding` ya
   extraídos, sectores detectados, y los datos de contacto de la organización.
-- **Salida** (`PersonalizedQuestionnaireOutput`, validada con Zod): saludo, nota de
-  confidencialidad, una lista de módulos (título + introducción + preguntas) y un cierre.
-  `validatePersonalizedQuestionnaire()` rechaza cualquier salida donde una "pregunta" no
-  tenga forma interrogativa — la salida debe preguntar, nunca afirmar como hecho algo que
-  no esté confirmado.
+- **Salida** (`PersonalizedQuestionnaireOutput`, validada con Zod): sigue el formato de un
+  diagnóstico profesional real, no un formulario plano — portada (título, subtítulo,
+  referencia legal, cliente, contactos), 2-4 párrafos de presentación adaptados al giro
+  real del cliente, instrucciones de cómo responder, nota de confidencialidad, un glosario
+  de términos del rubro (si aplica), 8 a 16 módulos (cada uno con área responsable
+  sugerida, fase `FASE_1_ESENCIAL`/`FASE_2_AMPLIACION`, introducción, y preguntas
+  **abiertas o cerradas** — las cerradas con 2 a 5 opciones tipo checkbox y, si procede,
+  un campo de detalle), una lista de verificación de documentos a adjuntar, y un cierre.
+  `validatePersonalizedQuestionnaire()` rechaza cualquier pregunta abierta sin forma
+  interrogativa (la salida pregunta, nunca afirma como hecho algo no confirmado) y
+  cualquier pregunta cerrada sin al menos dos opciones.
 - **Con `AI_PROVIDER=mock`**: el proveedor mock **no finge redactar** — arma los módulos
-  agrupando el banco de preguntas genérico por categoría y lo dice explícitamente en el
-  saludo ("[MODO MOCK: ... no fueron redactados por un modelo de lenguaje real ...]"). Es
-  un resultado utilizable como estructura, no como redacción personalizada real.
+  agrupando el banco de preguntas genérico por categoría (todas abiertas, sin glosario ni
+  checklist) y lo dice explícitamente en la presentación ("[MODO MOCK: ... no fueron
+  redactados por un modelo de lenguaje real ...]"). Es un resultado utilizable como
+  estructura, no como redacción personalizada real.
 - **Con un proveedor real** (`AI_PROVIDER=anthropic|openai` + `AI_API_KEY`): el modelo
-  recibe una instrucción explícita de no mencionar ningún proveedor, cifra, plataforma o
-  práctica que no esté literalmente presente en la evidencia entregada, de no citar
-  normas ni emitir conclusiones jurídicas, y de que cada pregunta se formule como
-  pregunta, no como afirmación — ver `PERSONALIZED_QUESTIONNAIRE_SYSTEM_PROMPT` en
-  `providers/live.ts`.
+  recibe instrucciones explícitas de (a) no mencionar ningún proveedor, cifra, plataforma,
+  nombre propio o práctica que no esté literalmente presente en la evidencia entregada,
+  (b) no citar normas ni emitir conclusiones jurídicas, (c) que cada pregunta abierta se
+  formule como pregunta y nunca como afirmación, y (d) alcanzar un estándar de calidad
+  "de abogado que estudió a fondo este cliente específico" — nombrando su negocio,
+  herramientas y cifras reales, no un formulario genérico intercambiable entre clientes
+  del mismo rubro — ver `PERSONALIZED_QUESTIONNAIRE_SYSTEM_PROMPT` en `providers/live.ts`.
+  El límite de salida del modelo se fijó en 8192 tokens para dar espacio a esta
+  profundidad.
 - Se exporta a `.docx` con `src/modules/export/personalized-questionnaire-docx.ts`
   (registrado como `Export` con `kind: 'CUESTIONARIO_PERSONALIZADO'`, descargable por la
   misma ruta segura que el resto de las exportaciones) desde un botón en

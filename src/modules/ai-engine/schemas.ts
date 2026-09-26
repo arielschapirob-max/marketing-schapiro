@@ -71,37 +71,66 @@ export function validateNoHallucination(output: MeetingAnalysisOutput): string[]
 // ---------------------------------------------------------------------------
 // Cuestionario personalizado (redactado a medida del cliente, para envío directo)
 // ---------------------------------------------------------------------------
+//
+// El formato sigue el estándar real usado en la práctica (ver LEGAL_ENGINE.md /
+// AI_ENGINE.md): portada, presentación adaptada al giro real del cliente,
+// instrucciones de cómo responder, glosario de términos del rubro, módulos
+// con preguntas abiertas y cerradas (con opciones tipo checkbox), y una lista
+// de verificación de documentos a adjuntar al final.
+
+export const personalizedQuestionEntrySchema = z.object({
+  number: z.string().min(1),
+  text: z.string().min(1),
+  type: z.enum(['abierta', 'cerrada']),
+  options: z.array(z.string().min(1)).optional(),
+  allowsDetail: z.boolean().optional(),
+});
 
 export const personalizedQuestionnaireModuleSchema = z.object({
   title: z.string().min(1),
+  areaResponsible: z.string().min(1),
+  phase: z.enum(['FASE_1_ESENCIAL', 'FASE_2_AMPLIACION']),
   intro: z.string().min(1),
-  questions: z.array(z.string().min(1)).min(1),
+  questions: z.array(personalizedQuestionEntrySchema).min(1),
 });
 
 export const personalizedQuestionnaireOutputSchema = z.object({
-  greeting: z.string().min(1),
+  coverPage: z.object({
+    title: z.string().min(1),
+    subtitle: z.string().min(1),
+    lawReference: z.string().min(1),
+    preparedFor: z.string().min(1),
+    contacts: z.string().min(1),
+  }),
+  presentation: z.array(z.string().min(1)).min(1),
+  howToRespond: z.array(z.string().min(1)).min(1),
   confidentialityNote: z.string().min(1),
+  glossary: z.array(z.object({ term: z.string().min(1), definition: z.string().min(1) })),
   modules: z.array(personalizedQuestionnaireModuleSchema).min(1),
+  documentChecklist: z.array(z.string().min(1)),
   closingNote: z.string().min(1),
 });
 
+export type PersonalizedQuestionEntry = z.infer<typeof personalizedQuestionEntrySchema>;
 export type PersonalizedQuestionnaireModule = z.infer<typeof personalizedQuestionnaireModuleSchema>;
 export type PersonalizedQuestionnaireOutput = z.infer<typeof personalizedQuestionnaireOutputSchema>;
 
 /**
- * Chequeo mínimo de trazabilidad: cada pregunta debe poder referirse a texto
- * disponible en la evidencia entregada (transcripción + hallazgos web) — no
- * se puede verificar semánticamente que la IA no "inventó" un detalle, pero
- * sí se rechaza una salida que mencione un norma fuera del catálogo cerrado
- * o que se salga de la forma de pregunta (una afirmación categórica en vez
- * de una pregunta es una señal de que la IA está concluyendo, no preguntando).
+ * Chequeo mínimo de forma: cada pregunta abierta debe tener forma
+ * interrogativa (nunca una afirmación de hecho no confirmado), y cada
+ * pregunta cerrada debe traer al menos dos opciones para marcar. No se puede
+ * verificar semánticamente que la IA no "inventó" un detalle citado en una
+ * pregunta — eso queda para la revisión humana antes de enviar el documento.
  */
 export function validatePersonalizedQuestionnaire(output: PersonalizedQuestionnaireOutput): string[] {
   const errors: string[] = [];
   for (const mod of output.modules) {
     for (const q of mod.questions) {
-      if (!/[?¿]/.test(q)) {
-        errors.push(`Pregunta sin forma interrogativa en el módulo "${mod.title}": "${q.slice(0, 80)}"`);
+      if (q.type === 'abierta' && !/[?¿]/.test(q.text)) {
+        errors.push(`Pregunta abierta sin forma interrogativa en el módulo "${mod.title}": "${q.text.slice(0, 80)}"`);
+      }
+      if (q.type === 'cerrada' && (!q.options || q.options.length < 2)) {
+        errors.push(`Pregunta cerrada sin opciones suficientes en el módulo "${mod.title}": "${q.text.slice(0, 80)}"`);
       }
     }
   }
