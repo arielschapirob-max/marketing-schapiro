@@ -15,6 +15,19 @@ PATRON_RUT = re.compile(r"\b\d{1,2}\.?\d{3}\.?\d{3}[-‐]?[\dkK]\b")
 PATRON_MONTO = re.compile(r"\$?\s?-?\(?\d{1,3}(?:\.\d{3})+(?:,\d+)?\)?")
 PATRON_FECHA = re.compile(r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b")
 
+# Algunas liquidaciones reales (ej. Banmédica) extraen con PyMuPDF con cada
+# columna de la tabla en su propia línea, en vez de una prestación completa
+# por línea (que es lo que asume ``extraer_items_desde_texto``). Cada fila
+# empieza con el RUT del prestador en formato "92,051,000-0" o "92.051.000-0"
+# (coma o punto como separador de miles), lo que sirve como marcador de
+# inicio de fila para reagrupar las columnas.
+PATRON_RUT_PRESTADOR_LINEA = re.compile(r"^\d{1,3}(?:[.,]\d{3}){1,3}-[\dkK]$", re.IGNORECASE)
+PATRON_ENTERO_CORTO = re.compile(r"^\d{1,3}$")
+PATRON_CODIGO_SOLO = re.compile(r"^\d{4,8}$")
+PATRON_MONTO_SOLO = re.compile(r"^-?\d{1,3}(?:\.\d{3})*$")
+FLAGS_IGNORADOS = {"n", "s", "ac"}
+ENCABEZADOS_DE_SECCION = ("total", "resumen", "detalle", "reembolsos", "bonos", "financiamiento")
+
 ISAPRES_CONOCIDAS = [
     "banmédica",
     "banmedica",
@@ -193,6 +206,110 @@ def extraer_items_desde_texto(texto: str, metodo: str, pagina: int | None = None
             }
         )
 
+    return items
+
+
+def _interpretar_grupo_columnar(lineas_grupo: list[str], pagina: int | None) -> dict | None:
+    """Interpreta las líneas de una fila reagrupada por RUT de prestador.
+
+    Clasifica cada línea por su forma (no por posición fija), porque las
+    celdas vacías del PDF de origen no dejan línea alguna: la cantidad de
+    columnas presentes varía de una sección a otra de la misma liquidación
+    (ej. "DETALLE INSUMOS" solo trae un monto, "DETALLE HOSPITALIZACIÓN"
+    trae tres).
+    """
+    descripcion = None
+    cantidad = None
+    codigo = None
+    montos: list[float] = []
+    glosa = None
+
+    for linea in lineas_grupo:
+        if not linea:
+            continue
+        minuscula = linea.lower()
+        if minuscula in FLAGS_IGNORADOS:
+            continue
+        if codigo is None and cantidad is None and PATRON_ENTERO_CORTO.match(linea):
+            cantidad = float(linea)
+            continue
+        if codigo is None and PATRON_CODIGO_SOLO.match(linea):
+            codigo = linea
+            continue
+        if PATRON_MONTO_SOLO.match(linea):
+            valor = parsear_monto(linea)
+            if valor is not None:
+                montos.append(valor)
+            continue
+        if descripcion is None:
+            descripcion = linea
+        else:
+            # Texto no numérico adicional (ej. "PRESTACION SIN CODIGO EN
+            # ARANCEL...") corresponde a la causal/motivo, no a la descripción.
+            glosa = linea if glosa is None else f"{glosa} {linea}"
+
+    if not descripcion:
+        return None
+
+    valor_cobrado = montos[0] if len(montos) >= 1 else None
+    valor_bonificado = montos[1] if len(montos) >= 2 else None
+    copago = montos[2] if len(montos) >= 3 else None
+
+    return {
+        "codigo_prestacion": codigo,
+        "descripcion": descripcion,
+        "cantidad": cantidad,
+        "valor_cobrado": valor_cobrado,
+        "valor_bonificado": valor_bonificado,
+        "copago": copago,
+        "glosa": glosa,
+        "pagina_origen": pagina,
+        "confianza": {
+            "codigo_prestacion": "medio" if codigo else "bajo",
+            "descripcion": "medio",
+            "valor_cobrado": "medio" if valor_cobrado is not None else "bajo",
+            "valor_bonificado": "medio" if valor_bonificado is not None else "bajo",
+            "copago": "medio" if copago is not None else "bajo",
+        },
+    }
+
+
+def extraer_items_columnar_por_prestador(texto: str, pagina: int | None = None) -> list[dict]:
+    """Extrae ítems de liquidaciones donde cada columna quedó en su propia línea.
+
+    Reagrupa las líneas usando el RUT del prestador (formato "92,051,000-0")
+    como marcador de inicio de cada fila de prestación, hasta el siguiente RUT
+    de prestador o hasta un encabezado de sección (TOTAL, RESUMEN, DETALLE,
+    REEMBOLSOS, BONOS, FINANCIAMIENTO). Si el texto no tiene este patrón (ej.
+    los documentos ficticios de muestra, donde cada prestación ya viene en una
+    sola línea), devuelve una lista vacía y el llamador debe recurrir a
+    ``extraer_items_desde_texto``.
+    """
+    lineas = [linea.strip() for linea in texto.splitlines()]
+    items: list[dict] = []
+    i = 0
+    n = len(lineas)
+    while i < n:
+        if PATRON_RUT_PRESTADOR_LINEA.match(lineas[i]):
+            grupo = []
+            j = i + 1
+            while j < n:
+                candidata = lineas[j]
+                if not candidata:
+                    j += 1
+                    continue
+                if PATRON_RUT_PRESTADOR_LINEA.match(candidata):
+                    break
+                if candidata.lower().startswith(ENCABEZADOS_DE_SECCION):
+                    break
+                grupo.append(candidata)
+                j += 1
+            item = _interpretar_grupo_columnar(grupo, pagina)
+            if item:
+                items.append(item)
+            i = j
+        else:
+            i += 1
     return items
 
 

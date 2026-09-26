@@ -53,9 +53,15 @@ def procesar_documento(ruta: str, tipo_documento: str = "cuenta_clinica") -> dic
         if extrae_items:
             if extraido["metodo"] in METODOS_POR_PAGINA and extraido["paginas"]:
                 for num_pagina, texto_pagina in enumerate(extraido["paginas"], start=1):
-                    items_crudos.extend(fe.extraer_items_desde_texto(texto_pagina, extraido["metodo"], num_pagina))
+                    items_pagina = fe.extraer_items_columnar_por_prestador(texto_pagina, num_pagina)
+                    if not items_pagina:
+                        items_pagina = fe.extraer_items_desde_texto(texto_pagina, extraido["metodo"], num_pagina)
+                    items_crudos.extend(items_pagina)
             else:
-                items_crudos.extend(fe.extraer_items_desde_texto(extraido["texto"], extraido["metodo"]))
+                items_texto = fe.extraer_items_columnar_por_prestador(extraido["texto"])
+                if not items_texto:
+                    items_texto = fe.extraer_items_desde_texto(extraido["texto"], extraido["metodo"])
+                items_crudos.extend(items_texto)
 
     if extrae_items and not items_crudos and any(campos_globales.get("campos", {}).values()):
         items_crudos = [{"confianza": {}}]
