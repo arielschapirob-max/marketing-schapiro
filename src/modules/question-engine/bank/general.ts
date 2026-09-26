@@ -215,12 +215,18 @@ export const GENERAL_QUESTIONS: QuestionSeed[] = [
     answerType: 'YES_NO_UNKNOWN',
     required: false,
     order: 155,
-    justification: 'Permite evaluar la exposición de la organización frente al marco de ciberseguridad (Ley 21.663) cuando se identifican tecnologías o incidentes relevantes.',
+    justification: 'Permite evaluar la exposición de la organización frente al marco de ciberseguridad (Ley 21.663) cuando pertenece a un sector potencialmente comprendido (energía, agua, telecomunicaciones, salud, transporte, financiero) o se identifican tecnologías o incidentes relevantes.',
     legalMatter: 'Ciberseguridad',
     norm: 'Ley N.º 21.663',
     source: 'L21663-001',
     riskLevel: 'medio',
-    visibilityCondition: { any: [{ op: 'nonEmpty', path: 'technologies' }, { op: 'nonEmpty', path: 'incidents' }] },
+    visibilityCondition: {
+      any: [
+        { op: 'includesAny', path: 'sectorKeys', values: ['salud', 'telecomunicaciones', 'servicios-publicos', 'financiero', 'transporte'] },
+        { op: 'nonEmpty', path: 'technologies' },
+        { op: 'nonEmpty', path: 'incidents' },
+      ],
+    },
   },
   {
     code: 'Q-INC-002',

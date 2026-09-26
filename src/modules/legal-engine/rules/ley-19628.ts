@@ -17,7 +17,7 @@ export const LEY_19628_RULES: LegalRuleSeed[] = [
     code: 'L19628-001',
     name: 'Ámbito general de aplicación de la Ley 19.628',
     description:
-      'La Ley N.º 19.628 regula el tratamiento de datos de carácter personal en registros o bancos de datos por organismos públicos y privados. Se identifica como potencialmente aplicable a toda organización que trate datos personales de titulares en Chile.',
+      'La Ley N.º 19.628, sobre protección de la vida privada (publicada en el Diario Oficial el 28 de agosto de 1999, según fuentes secundarias coincidentes), regula el tratamiento de datos de carácter personal en registros o bancos de datos por organismos públicos y privados. Se identifica como potencialmente aplicable a toda organización que trate datos personales de titulares en Chile.',
     jurisdiction: 'Chile',
     subject: 'Ámbito de aplicación general',
     norm: 'Ley N.º 19.628',

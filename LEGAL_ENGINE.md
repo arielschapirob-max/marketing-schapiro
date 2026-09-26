@@ -19,6 +19,57 @@ real, un abogado debe contrastar cada regla contra el texto vigente en bcn.cl** 
 actualizarla desde la pantalla de administración de fuentes y reglas (o directamente en
 `src/modules/legal-engine/rules/*.ts` + `npm run db:seed`).
 
+### Segunda pasada de revisión (misma limitación de red, más fuentes cruzadas)
+
+Se hizo una segunda pasada de revisión de las 17 reglas usando búsqueda web general
+(no acceso directo a bcn.cl, que se confirmó nuevamente bloqueado) para contrastar cada
+regla contra **varias fuentes secundarias independientes a la vez** en vez de una sola, y
+corregir lo que no coincidiera. Cambios concretos que salieron de esa revisión:
+
+- **`L21719-003`** (derechos ampliados): la primera versión especulaba un derecho a "no
+  ser objeto de decisiones automatizadas sin intervención humana", que ninguna fuente
+  consultada menciona para esta ley. Se corrigió a los dos derechos que sí aparecen
+  repetidos en múltiples fuentes especializadas — **portabilidad** y **bloqueo temporal**
+  — bajo el acrónimo "ARCOP", con un plazo de respuesta descrito de 30 días corridos
+  prorrogables por 30 más (plazo también pendiente de confirmación oficial).
+- **`L21719-005`** (Delegado de Protección de Datos): las fuentes consultadas se
+  **contradicen entre sí** — unas dicen que el DPO es obligatorio para organismos
+  públicos y tratamiento de datos sensibles a gran escala, otras dicen que el artículo 50
+  lo dejaría como una facultad ("podrá designar"), no una obligación. La regla ahora dice
+  esto explícitamente en vez de asumir cualquiera de las dos versiones.
+- **`L21663-001`** (ciberseguridad): se agregó que la ley crea la **Agencia Nacional de
+  Ciberseguridad (ANCI)** y el concepto de **Operador de Importancia Vital (OIV)**
+  (artículo 5°), y que los artículos 5, 8, 9 y el Título VII entraron en vigor el 1 de
+  marzo de 2025. La condición de activación se acotó de "cualquier tecnología detectada"
+  (demasiado amplia — casi cualquier organización usa alguna tecnología) a los sectores
+  que las fuentes asocian con "servicios esenciales"/OIV (salud, telecomunicaciones,
+  servicios públicos, financiero, transporte), más incidentes de seguridad como gatillo
+  adicional.
+- **`L21459-001`** (delitos informáticos): se agregó la numeración de artículos por tipo
+  penal (ataque a la integridad de un sistema: art. 1; acceso ilícito: art. 2;
+  interceptación ilícita: art. 3; ataque a la integridad de datos: art. 4; receptación
+  informática: art. 6; fraude informático: art. 7; abuso de dispositivos: art. 8),
+  corroborada por varias fuentes jurídicas independientes entre sí (incluyendo un
+  artículo académico revisado por pares), aunque sigue sin confirmarse contra el texto
+  oficial.
+- **`L20584-001`** (ficha clínica): se agregaron tres puntos descritos consistentemente
+  por fuentes especializadas de salud — confidencialidad frente a terceros no
+  autorizados (incluidos familiares sin consentimiento), un plazo de entrega de copia al
+  paciente descrito en 48 horas hábiles, y una conservación mínima descrita en 15 años.
+- **`L19628-001`**: se agregó la fecha de publicación (28 de agosto de 1999), coincidente
+  entre BCN y otras fuentes oficiales/institucionales (Gobierno Digital).
+- **Vigencia de la Ley 21.719**: se detectó un proyecto de ley en trámite (**boletín
+  18.623-07**) que propondría postergar la vigencia general del 1 de diciembre de 2026 al
+  1 de diciembre de 2027. La fecha configurada por defecto sigue siendo 2026 (la vigente
+  según el texto de la propia Ley 21.719), pero esto debe monitorearse — ver el
+  comentario correspondiente en `vigencia.ts`.
+
+Ninguno de estos cambios sube el `validationStatus` de una regla a `'VALIDADA'`: seguir
+corroborado por fuentes secundarias, aunque sean varias e independientes entre sí, no
+equivale a confirmarlo contra el texto oficial. Sirve para que la revisión de un abogado
+parta de un texto más preciso y con las contradicciones ya señaladas, no para saltarse esa
+revisión.
+
 ## Modelo de datos
 
 - `LegalSource`: fuente oficial (nombre, autoridad, URL). Ver `sources.ts`.

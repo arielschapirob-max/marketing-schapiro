@@ -63,9 +63,9 @@ export const LEY_21719_RULES: LegalRuleSeed[] = [
   },
   {
     code: 'L21719-003',
-    name: 'Derechos de los titulares ampliados',
+    name: 'Derechos de los titulares ampliados (ARCOP)',
     description:
-      'El nuevo marco amplía los derechos de los titulares más allá de acceso/rectificación/cancelación/oposición (p. ej., derecho a portabilidad y a no ser objeto de decisiones automatizadas sin intervención humana en determinados casos, entre otros que deben confirmarse contra el texto oficial).',
+      'El nuevo marco ampliaría los derechos de acceso, rectificación y cancelación/supresión reconocidos por la Ley 19.628 con dos derechos adicionales: portabilidad (obtener una copia de los datos en formato estructurado para transmitirlos a otro responsable) y bloqueo temporal (suspender el tratamiento mientras se resuelve una solicitud de rectificación, supresión u oposición) — conjunto conocido en fuentes secundarias como "ARCOP". Esas mismas fuentes describen un plazo de respuesta de 30 días corridos, prorrogable por 30 días adicionales en casos justificados; ninguno de estos plazos ni el detalle procedimental fue confirmado contra el texto oficial.',
     jurisdiction: 'Chile',
     subject: 'Derechos de los titulares',
     norm: 'Ley N.º 21.719',
@@ -75,7 +75,7 @@ export const LEY_21719_RULES: LegalRuleSeed[] = [
     activationConditions: { op: 'nonEmpty', path: 'dataSubjects' },
     result: {
       obligationSummary:
-        'Preparar procedimientos de atención de derechos ampliados de los titulares, incluyendo plazos de respuesta que deben confirmarse con el texto oficial vigente a la fecha de entrada en vigor.',
+        'Preparar procedimientos de atención de los seis derechos (acceso, rectificación, cancelación, oposición, portabilidad y bloqueo), incluyendo el plazo de respuesta, una vez confirmado el detalle exacto contra el texto oficial vigente a la fecha de entrada en vigor.',
       references: ['Ley N.º 21.719'],
     },
     risk: 'Procedimiento de derechos ARCO insuficiente para el estándar ampliado',
@@ -116,7 +116,7 @@ export const LEY_21719_RULES: LegalRuleSeed[] = [
     code: 'L21719-005',
     name: 'Delegado de Protección de Datos (DPO)',
     description:
-      'El nuevo marco contempla, en determinados supuestos (volumen de datos, tipo de organización, tratamiento de datos sensibles a gran escala), la designación de un Delegado de Protección de Datos. Los supuestos exactos deben confirmarse contra el texto oficial.',
+      'Las fuentes secundarias consultadas se contradicen sobre este punto: unas describen la designación de un Delegado de Protección de Datos como obligatoria para organismos públicos y empresas cuya actividad principal implique tratamiento de datos sensibles a gran escala; otras señalan que el artículo 50 la dejaría como una facultad ("podrá designar"), no una obligación. Ante esta contradicción entre fuentes no oficiales, el sistema no asume ninguna de las dos y exige confirmación directa del texto vigente antes de afirmar que existe (o no) una obligación de designar DPO.',
     jurisdiction: 'Chile',
     subject: 'Gobernanza de datos',
     norm: 'Ley N.º 21.719',
