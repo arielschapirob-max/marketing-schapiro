@@ -15,7 +15,7 @@ const envSchema = z.object({
   AI_PROVIDER: z.enum(['mock', 'anthropic', 'openai']).default('mock'),
   AI_API_KEY: z.string().optional().default(''),
   AI_MODEL: z.string().optional().default('claude-sonnet-5'),
-  AI_TIMEOUT_MS: z.coerce.number().default(30000),
+  AI_TIMEOUT_MS: z.coerce.number().default(180000),
   AI_MAX_RETRIES: z.coerce.number().default(2),
 
   OCR_PROVIDER: z.enum(['mock', 'tesseract', 'external']).default('mock'),
