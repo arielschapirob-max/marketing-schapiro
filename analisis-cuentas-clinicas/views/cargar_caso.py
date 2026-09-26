@@ -8,7 +8,7 @@ import streamlit as st
 from app.config import settings
 from app.db.database import get_session
 from app.db.models import Caso, Documento, ItemCuenta
-from app.extraction.document_types import TIPOS_CON_ITEMS, TIPOS_DOCUMENTO
+from app.extraction.document_types import TIPOS_CON_ITEMS, TIPOS_DOCUMENTO, sugerir_tipo_documento
 from app.extraction.pipeline import procesar_documento
 from app.security.audit import registrar_acceso
 from app.utils.file_storage import excede_tamano_maximo, guardar_archivo_caso
@@ -41,12 +41,16 @@ archivos = st.file_uploader(
 tipos_seleccionados = {}
 if archivos:
     st.write("Indique el tipo de cada documento cargado:")
+    opciones_tipo = list(TIPOS_DOCUMENTO.keys())
     for archivo in archivos:
+        sugerido = sugerir_tipo_documento(archivo.name)
         tipos_seleccionados[archivo.name] = st.selectbox(
             archivo.name,
-            options=list(TIPOS_DOCUMENTO.keys()),
+            options=opciones_tipo,
+            index=opciones_tipo.index(sugerido),
             format_func=lambda clave: TIPOS_DOCUMENTO[clave],
             key=f"tipo_doc_{archivo.name}_{archivo.size}",
+            help="Sugerido automáticamente según el nombre del archivo — revise y corrija si no corresponde.",
         )
     st.caption(
         "Solo los documentos marcados como Cuenta clínica o Liquidación de isapre pasan por la "
