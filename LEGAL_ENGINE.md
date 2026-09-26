@@ -2,27 +2,23 @@
 
 ## Estado de verificación (léase primero)
 
-**12 de las 17 reglas jurídicas del sistema (las 6 de la Ley 19.628 y las 11 de la Ley
-21.719) están `validationStatus: 'VALIDADA'`**, contrastadas artículo por artículo contra
-el **texto oficial de la Biblioteca del Congreso Nacional**, aportado directamente en PDF
-por el usuario (dueño del proyecto, abogado) cuando el acceso de red a bcn.cl resultó
-bloqueado en este entorno (ver historial abajo). Cada una de esas reglas cita el número de
-artículo exacto y un extracto textual verbatim del PDF oficial, en los campos `article` y
-`excerpt` de `src/modules/legal-engine/rules/ley-19628.ts` y `ley-21719.ts`.
+**Las 21 reglas jurídicas del sistema están `validationStatus: 'VALIDADA'`**, contrastadas
+artículo por artículo contra el **texto oficial de la Biblioteca del Congreso Nacional**:
+las 6 de la Ley 19.628 y las 11 de la Ley 21.719 contra el PDF oficial aportado
+directamente por el usuario (dueño del proyecto, abogado) cuando el acceso de red a
+bcn.cl resultó bloqueado en este entorno; y las 4 restantes (`L20584-001`, `L21663-001`,
+`L21459-001`, `CPR-001`) contra el texto XML oficial obtenido en vivo desde `bcn.cl` una
+vez que el usuario habilitó ese dominio en el entorno (ver historial abajo, "Cuarta
+pasada"). Cada regla cita el número de artículo exacto y un extracto textual verbatim de
+la fuente oficial, en los campos `article` y `excerpt` de
+`src/modules/legal-engine/rules/*.ts`.
 
-**Las 5 reglas restantes siguen `REQUIERE_VALIDACION_JURIDICA`**: `L20584-001` (Ley
-20.584, ficha clínica), `L21663-001` (Ley 21.663, ciberseguridad), `L21459-001` (Ley
-21.459, delitos informáticos) y `CPR-001` (Constitución), porque no se dispuso del texto
-oficial de esas normas en este entorno (solo de la Ley 19.628 y la Ley 21.719) — se
-mantienen basadas en fuentes secundarias, con el detalle de esa revisión en la sección
-correspondiente más abajo.
-
-**Antes de usar este sistema con un cliente real**, un abogado debe: (a) para las 12
-reglas `VALIDADA`, confirmar que el PDF de origen corresponde a la versión vigente al
-momento de uso (la ley puede haberse modificado desde la fecha de generación del
-documento); y (b) para las 5 reglas restantes, contrastarlas contra el texto oficial en
-bcn.cl. Cualquier actualización se hace en `src/modules/legal-engine/rules/*.ts` +
-`npm run db:seed`, o desde la pantalla de administración de fuentes y reglas.
+**Antes de usar este sistema con un cliente real**, un abogado debe reconfirmar que el
+texto de origen de cada regla corresponde a la versión vigente al momento de uso (una ley
+puede modificarse después de la fecha de esta revisión — ver, por ejemplo, la alerta de
+seguimiento sobre el boletín 18.623-07 en `vigencia.ts`). Cualquier actualización se hace
+en `src/modules/legal-engine/rules/*.ts` + `npm run db:seed`, o desde la pantalla de
+administración de fuentes y reglas.
 
 ## Historial de verificación
 
@@ -160,6 +156,71 @@ Las normas sectoriales (Ley 20.584, Ley 21.663, Ley 21.459, Constitución) **no*
 verificadas en esta tercera pasada porque el usuario no aportó esos PDF — siguen en el
 estado descrito en la sección de la segunda pasada, `REQUIERE_VALIDACION_JURIDICA`.
 
+### Cuarta pasada — acceso directo a bcn.cl y verificación de las 4 reglas sectoriales
+
+El usuario habilitó `bcn.cl`/`www.bcn.cl` en la configuración de red del entorno. La
+interfaz pública de `www.bcn.cl/leychile` es una aplicación Angular que no puede
+renderizarse con las herramientas de fetch de este entorno (devuelve solo el cascarón
+HTML con el mensaje "Este proceso demora demasiado..."), y su API de datos vive en el
+subdominio `servicios-leychile.bcn.cl`, que seguía bloqueado por el proxy. Se resolvió
+localizando, dentro del propio dominio ya autorizado `www.bcn.cl`, el endpoint que esa
+misma aplicación usa para obtener el **texto oficial completo en XML**:
+`https://www.bcn.cl/leychile/consulta/obtxml?opt=7&idNorma=<id>` (accedido con `curl` con
+un User-Agent de navegador; sin ese encabezado el servidor devuelve 401). Con este
+endpoint se descargó y leyó íntegramente el texto vigente de:
+
+- Ley N.º 20.584 (`idNorma=1039348`, ficha clínica)
+- Ley N.º 21.663 (`idNorma=1202434`, marco de ciberseguridad)
+- Ley N.º 21.459 (`idNorma=1177743`, delitos informáticos)
+- Ley N.º 21.096 (`idNorma=1119730`, reforma constitucional de 2018)
+- Constitución Política de la República, texto refundido (`idNorma=242302`, Decreto 100
+  de 2005)
+
+y, como control cruzado adicional, también la Ley 19.628 (`idNorma=141599`) y la Ley
+21.719 (`idNorma=1209272`) ya validadas en la tercera pasada — ambas coincidieron
+exactamente con lo verificado contra los PDF, sin discrepancias.
+
+Resultado: **las 4 reglas de `sectoriales.ts` pasaron a `validationStatus: 'VALIDADA'`**,
+dejando las 21 reglas del sistema validadas contra fuente oficial. Hallazgos relevantes:
+
+- **`L20584-001`**: se confirma literalmente la conservación de la ficha clínica por "al
+  menos quince años" (art. 13) y la lista taxativa de ocho excepciones de acceso de
+  terceros (art. 13, letras a) a h)). **Corrección respecto de la segunda pasada**: el
+  plazo de "48 horas hábiles" para entregar copia al paciente, tomado entonces de fuentes
+  secundarias de salud, **no existe en el texto de la ley** — el artículo 13 dice
+  únicamente "entrega gratuita y sin dilaciones indebidas". Si ese plazo en horas existe,
+  estaría en el Reglamento de Fichas Clínicas (Decreto N.º 41), que no fue verificado en
+  este entorno; la regla ya no lo afirma como si fuera de rango legal.
+- **`L21663-001`**: se transcriben literalmente el ámbito de aplicación (servicios
+  esenciales y Operadores de Importancia Vital, art. 4º), los requisitos de calificación
+  como OIV (art. 5º), los deberes específicos de los OIV (art. 8º) y, con el mayor detalle
+  logrado hasta ahora, el esquema exacto de plazos del deber de reportar al CSIRT Nacional
+  (art. 9º): alerta temprana a las 3 horas, actualización a las 72 horas (24 horas si el
+  afectado es un OIV con su servicio esencial interrumpido), informe final a los 15 días
+  corridos. **Corrección respecto de la segunda pasada**: la afirmación de que "los
+  artículos 5, 8, 9 y el Título VII entraron en vigor el 1 de marzo de 2025" no se
+  encuentra en el texto de la ley — la disposición transitoria "Artículo primero" delega
+  en un DFL presidencial (a dictarse dentro de un año desde la publicación, 08-abr-2024)
+  la fijación del calendario detallado, con un mínimo de 6 meses desde su publicación. Esa
+  fecha específica de marzo de 2025, de ser correcta, proviene de ese DFL de
+  implementación, no de la ley misma, y no se afirma en la regla sin haber verificado ese
+  DFL directamente.
+- **`L21459-001`**: se confirma la numeración exacta de siete de los ocho tipos penales que
+  ya tenía la regla (arts. 1, 2, 3, 4, 6, 7 y 8) y **se agrega el artículo 5º
+  (falsificación informática)**, que la segunda pasada había omitido por completo de la
+  enumeración pese a existir en el texto oficial.
+- **`CPR-001`**: se transcribe el texto vigente completo del artículo 19 N.º 4 de la
+  Constitución ("el respeto y protección a la vida privada y a la honra de la persona y su
+  familia, y asimismo, la protección de sus datos personales...") y se identifica con
+  precisión que esa frase fue incorporada por la **Ley N.º 21.096** (2018), cuyo artículo
+  único se transcribió también en forma literal — antes la regla solo decía, en términos
+  genéricos, que la Constitución "reconoce" el derecho, sin citar norma ni texto.
+- **Vigencia de la Ley 21.719 — reconfirmación con fecha 26-sep-2026**: el boletín
+  18.623-07 (que propone postergar la vigencia general al 1-dic-2027) seguía en primer
+  trámite constitucional en el Senado a esa fecha, sin ser ley ni estar publicado; la
+  fecha vigente sigue siendo el 1-dic-2026. Ver el comentario actualizado en
+  `vigencia.ts`.
+
 ## Modelo de datos
 
 - `LegalSource`: fuente oficial (nombre, autoridad, URL). Ver `sources.ts`.
@@ -226,9 +287,9 @@ actualizarla si una fuente oficial confirma un cambio sin tocar código.
   notificación de brechas (art. 14 sexies), principios generales (art. 3), encargo de
   tratamiento a terceros (art. 15 bis), datos de niños/niñas/adolescentes (art. 16 quáter).
 - **Normativa sectorial** (`L20584-001`, `L21663-001`, `L21459-001`, `CPR-001`,
-  **REQUIERE VALIDACIÓN JURÍDICA** — sin PDF oficial disponible en este entorno): Ley N.º
-  20.584 (ficha clínica, sector salud), Ley N.º 21.663 (marco de ciberseguridad), Ley N.º
-  21.459 (delitos informáticos), y una referencia general a la Constitución Política.
+  **VALIDADA**): Ley N.º 20.584 (ficha clínica, arts. 12-13), Ley N.º 21.663 (marco de
+  ciberseguridad, arts. 4, 5, 8 y 9), Ley N.º 21.459 (delitos informáticos, arts. 1-8), y
+  el artículo 19 N.º 4 de la Constitución Política (incorporado por la Ley N.º 21.096).
 
 Ninguna regla afirma aplicación automática: el resultado siempre es `APLICABLE |
 POTENCIALMENTE_APLICABLE | NO_DETERMINADA | NO_IDENTIFICADA | REQUIERE_VALIDACION_JURIDICA`.

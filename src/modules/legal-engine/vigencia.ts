@@ -18,14 +18,21 @@ import type { RuleRegime } from '@prisma/client';
  * 21.806 (05-feb-2026) solo modificó el procedimiento transitorio de
  * nombramiento de los primeros consejeros de la Agencia, no esta fecha.
  *
- * ALERTA DE SEGUIMIENTO: al buscar fuentes secundarias (antes de tener el
- * PDF oficial) se detectó un proyecto de ley en trámite (boletín 18.623-07)
- * que propondría postergar la vigencia general a 2027. El documento oficial
- * más reciente disponible (20-mar-2026) no refleja ese cambio, pero como
- * este análisis puede ejecutarse en una fecha posterior, se recomienda
- * reconfirmar contra bcn.cl antes de cada uso en producción. Si la fecha
- * cambiara, basta con actualizar LEY_21719_VIGENCIA_GENERAL en el entorno —
- * no requiere cambios de código.
+ * ALERTA DE SEGUIMIENTO (actualizada 26-sep-2026, con acceso directo a
+ * bcn.cl ya habilitado en este entorno): el proyecto de ley boletín
+ * 18.623-07 (ingresado por mensaje presidencial el 31-ago-2026) propone
+ * postergar la vigencia general del 1-dic-2026 al 1-dic-2027 y aumentar de 3
+ * a 5 los consejeros de la Agencia. A la fecha de esta revisión seguía en
+ * primer trámite constitucional en el Senado — **no es ley**, no ha sido
+ * publicado en el Diario Oficial, y por lo tanto la fecha legalmente vigente
+ * sigue siendo el 1-dic-2026 aquí configurado. Se consultó también en vivo el
+ * texto XML oficial de la Ley 19.628 (fechaVersion 2022-11-10) y de la Ley
+ * 21.719 (fechaVersion 2026-02-05) contra bcn.cl: ninguna trae una versión
+ * posterior que refleje la postergación. Debe reconfirmarse contra bcn.cl
+ * antes de cada uso en producción, especialmente si la fecha de uso es
+ * posterior a esta revisión. Si el boletín se publica como ley, basta con
+ * actualizar `LEY_21719_VIGENCIA_GENERAL` en el entorno — no requiere
+ * cambios de código.
  */
 export function getLey21719Fechas() {
   const env = getEnv();

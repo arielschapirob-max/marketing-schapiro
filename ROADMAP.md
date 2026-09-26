@@ -2,13 +2,16 @@
 
 ## Limitaciones conocidas (honestas, sin ocultar)
 
-1. **5 de las 21 reglas jurídicas (normativa sectorial y constitucional) no están
-   verificadas contra el texto oficial vigente.** El proxy de red de este entorno bloquea
-   `bcn.cl` y las demás fuentes oficiales; para la Ley 19.628 y la Ley 21.719 el usuario
-   resolvió esto adjuntando los PDF oficiales directamente, y esas 12 reglas ya están
-   `VALIDADA`. Faltan por verificar `L20584-001` (Ley 20.584), `L21663-001` (Ley 21.663),
-   `L21459-001` (Ley 21.459) y `CPR-001` (Constitución). Ver `LEGAL_ENGINE.md`. **Esto
-   debe resolverse antes de usar el sistema con un cliente real en esas materias.**
+1. **Las 21 reglas jurídicas del sistema están `validationStatus: 'VALIDADA'`** contra el
+   texto oficial de la Biblioteca del Congreso Nacional: las 6 de la Ley 19.628 y las 11
+   de la Ley 21.719 contra el PDF oficial aportado por el usuario, y las 4 de normativa
+   sectorial/constitucional (`L20584-001`, `L21663-001`, `L21459-001`, `CPR-001`) contra el
+   texto XML oficial obtenido en vivo de `bcn.cl` una vez habilitado ese dominio en el
+   entorno. Ver `LEGAL_ENGINE.md`. **Esto no exime de reconfirmación periódica**: una ley
+   validada en una fecha puede modificarse después (ver, p. ej., la alerta de seguimiento
+   del boletín 18.623-07 sobre la vigencia de la Ley 21.719 en `vigencia.ts`), y antes de
+   usar el sistema con un cliente real un abogado debe confirmar que el texto de origen de
+   cada regla sigue vigente al momento de uso.
 2. **El proveedor de IA real (Anthropic/OpenAI) no fue probado en vivo** — código
    completo, sin validación de red. Ver `AI_ENGINE.md`.
 3. **El análisis web no fue probado contra un sitio real** en este entorno — código
@@ -32,8 +35,10 @@
 ## Trabajo futuro sugerido (por prioridad)
 
 ### Corto plazo
-- Verificar el motor jurídico contra bcn.cl artículo por artículo con un abogado, y pasar
-  cada regla revisada a `validationStatus: 'VALIDADA'`.
+- Reconfirmar periódicamente (p. ej. semestralmente, o antes de cada uso relevante) las 21
+  reglas ya `VALIDADA` contra bcn.cl, dado que una ley puede modificarse después de la
+  fecha de esta revisión — con especial atención al boletín 18.623-07 sobre la vigencia de
+  la Ley 21.719.
 - Reemplazar el logotipo placeholder por el activo oficial de marca.
 - Probar el proveedor de IA real con una clave de API válida en un entorno con acceso de
   red normal.
