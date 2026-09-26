@@ -71,3 +71,19 @@ def test_informe_interno_contiene_el_detalle_completo(tmp_path):
 
     assert "220305" in texto_tablas
     assert "dispositivo_medico" in texto_tablas
+
+
+def test_informe_interno_incluye_fundamento_normativo_general(tmp_path):
+    item = _item()
+    ruta = tmp_path / "informe_interno.docx"
+    generar_informe_interno_docx(_caso_falso(), [item], [_hallazgo(item)], [], str(ruta))
+
+    documento = DocxDocument(str(ruta))
+    texto_tablas = "\n".join(
+        celda.text for tabla in documento.tables for fila in tabla.rows for celda in fila.cells
+    )
+
+    # El hallazgo de prueba es "dispositivo_medico": su fundamento normativo
+    # general debe aparecer en la matriz de hallazgos del informe interno.
+    assert "Compendio de Beneficios" in texto_tablas
+    assert "Garantías Explícitas en Salud" in texto_tablas

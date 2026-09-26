@@ -5,6 +5,7 @@ import datetime as dt
 import docx
 
 from app.analysis.findings_engine import calcular_monto_total_discutible
+from app.analysis.legal_grounds import fundamento_normativo_de
 from app.extraction.document_types import TIPOS_DOCUMENTO, TIPOS_RELEVANTES_PARA_CASO
 from app.extraction.normalization import formatear_rut
 from app.reports import texts
@@ -82,7 +83,13 @@ def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida:
         "Cada fila de la siguiente matriz corresponde a un hallazgo potencialmente discutible "
         "identificado en la cuenta, sujeto a validación profesional del abogado responsable."
     )
-    tabla_hallazgos = documento.add_table(rows=1, cols=6)
+    documento.add_paragraph(
+        "El fundamento normativo indicado es general (ley, DFL o compendio de la Superintendencia de Salud "
+        "aplicable a la materia) y no incluye jurisprudencia: la incorporación de fallos o dictámenes verificados "
+        "queda a criterio del abogado responsable. Los compendios de la Superintendencia se actualizan con "
+        "frecuencia — verificar la redacción vigente antes de citarlos en una gestión formal."
+    )
+    tabla_hallazgos = documento.add_table(rows=1, cols=7)
     tabla_hallazgos.style = "Light Grid Accent 1"
     encabezados_h = [
         "Tipo",
@@ -91,6 +98,7 @@ def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida:
         "Prioridad",
         "Estado",
         "Explicación interna",
+        "Fundamento normativo (general — verificar vigencia)",
     ]
     for celda, texto in zip(tabla_hallazgos.rows[0].cells, encabezados_h):
         celda.text = texto
@@ -102,6 +110,7 @@ def generar_informe_interno_docx(caso, items, hallazgos, historial, ruta_salida:
         fila[3].text = h.prioridad
         fila[4].text = h.estado
         fila[5].text = h.explicacion_interna or ""
+        fila[6].text = fundamento_normativo_de(h.tipo)
 
     documento.add_heading("4. Monto potencialmente discutible (sin duplicar ítems)", level=2)
     monto_total = calcular_monto_total_discutible(hallazgos)

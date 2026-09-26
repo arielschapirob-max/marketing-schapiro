@@ -28,6 +28,8 @@ TERMINOS_PROHIBIDOS = [
     "stent coronario",
     "arancel",
     "caec",
+    "compendio de beneficios",
+    "dfl n",
 ]
 
 # "ges" (programa GES) se verifica con límite de palabra: como substring colisiona

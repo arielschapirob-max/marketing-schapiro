@@ -4,6 +4,7 @@ import openpyxl
 from openpyxl.styles import Font
 
 from app.analysis.findings_engine import calcular_monto_total_discutible
+from app.analysis.legal_grounds import fundamento_normativo_de
 from app.extraction.document_types import TIPOS_DOCUMENTO, TIPOS_RELEVANTES_PARA_CASO
 
 
@@ -100,6 +101,7 @@ def generar_informe_interno_xlsx(caso, items, hallazgos, historial, ruta_salida:
             "Explicación interna",
             "Documentos faltantes",
             "Recomendación interna",
+            "Fundamento normativo (general — verificar vigencia)",
         ]
     )
     for h in hallazgos:
@@ -114,6 +116,7 @@ def generar_informe_interno_xlsx(caso, items, hallazgos, historial, ruta_salida:
                 h.explicacion_interna,
                 h.documentos_faltantes,
                 h.recomendacion_interna,
+                fundamento_normativo_de(h.tipo),
             ]
         )
 
