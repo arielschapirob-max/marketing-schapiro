@@ -1,6 +1,7 @@
-import type { AIProvider, MeetingAnalysisRequest } from '../types';
-import type { ExtractedFinding, MeetingAnalysisOutput } from '../schemas';
+import type { AIProvider, MeetingAnalysisRequest, PersonalizedQuestionnaireRequest } from '../types';
+import type { ExtractedFinding, MeetingAnalysisOutput, PersonalizedQuestionnaireOutput } from '../schemas';
 import { SECTORS } from '@/modules/legal-engine/sectors';
+import { ALL_QUESTIONS } from '@/modules/question-engine/bank';
 
 /**
  * Proveedor MOCK del motor de IA.
@@ -190,6 +191,43 @@ function detectUnknowns(text: string): string[] {
   return unknowns;
 }
 
+/**
+ * Fallback del cuestionario personalizado en MODO MOCK.
+ *
+ * A diferencia del análisis de transcripciones (donde una heurística léxica
+ * es razonable), redactar un cuestionario narrativo y personalizado como el
+ * que produce un LLM real no es algo que una heurística pueda simular de
+ * forma honesta. Este proveedor NO inventa prosa personalizada: agrupa el
+ * banco de preguntas genérico por categoría (filtrado a los sectores
+ * detectados) y lo dice explícitamente en el saludo, para que nunca se
+ * confunda con una redacción real hecha por IA. Para el resultado que
+ * describe el encargo original, configure AI_PROVIDER=anthropic|openai con
+ * una clave real (ver AI_ENGINE.md).
+ */
+function buildMockPersonalizedQuestionnaire(req: PersonalizedQuestionnaireRequest): PersonalizedQuestionnaireOutput {
+  const relevant = ALL_QUESTIONS.filter((q) => !q.sectorKeys || q.sectorKeys.some((k) => req.sectorNames.includes(k)) || req.sectorNames.length === 0);
+
+  const byCategory = new Map<string, string[]>();
+  for (const q of relevant) {
+    const list = byCategory.get(q.category) ?? [];
+    list.push(q.text.endsWith('?') ? q.text : `${q.text}?`);
+    byCategory.set(q.category, list);
+  }
+
+  const modules = [...byCategory.entries()].map(([title, questions]) => ({
+    title,
+    intro: `Preguntas del banco general relacionadas con "${title}".`,
+    questions,
+  }));
+
+  return {
+    greeting: `Hola ${req.organizationContext.contactName ?? req.organizationContext.legalName}. [MODO MOCK: este saludo y el resto del cuestionario NO fueron redactados por un modelo de lenguaje real — el proveedor de IA configurado es "mock". Lo que sigue es el banco de preguntas genérico agrupado por categoría, sin la personalización basada en la transcripción y el sitio web que ofrece un proveedor de IA real. Configure AI_PROVIDER=anthropic u openai con una clave válida para obtener la redacción personalizada.]`,
+    confidentialityNote: 'La información que nos entregues es confidencial y se usa únicamente para preparar tu diagnóstico.',
+    modules: modules.length > 0 ? modules : [{ title: 'General', intro: 'No hay preguntas aplicables detectadas.', questions: ['¿Hay algo relevante sobre el tratamiento de datos personales que quieras contarnos?'] }],
+    closingNote: 'Envíanos el cuestionario respondido por el mismo medio en que lo recibiste.',
+  };
+}
+
 export const mockAIProvider: AIProvider = {
   provider: 'mock',
   model: 'heuristic-lexicon-es-v1',
@@ -208,5 +246,8 @@ export const mockAIProvider: AIProvider = {
         })),
       unknowns,
     };
+  },
+  async generatePersonalizedQuestionnaire(req: PersonalizedQuestionnaireRequest): Promise<PersonalizedQuestionnaireOutput> {
+    return buildMockPersonalizedQuestionnaire(req);
   },
 };

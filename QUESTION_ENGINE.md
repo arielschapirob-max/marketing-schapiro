@@ -52,14 +52,25 @@ registrado en `bank/index.ts`) y correr `npm run db:seed`.
 
 ## Control sobre preguntas generadas por IA
 
-El encargo exige que la IA no cree preguntas libremente. En este proyecto, el
-**proveedor de IA no genera preguntas directamente**: solo extrae hallazgos
-estructurados (`ai-engine`), y es el motor de preguntas (determinista, basado en el banco
-versionado) el que decide qué preguntas mostrar según esos hallazgos. Si en el futuro se
-habilita generación de preguntas candidatas por IA (ver `AI_ENGINE.md` y `ROADMAP.md`),
-deben cumplir el mismo contrato: vinculación a una regla, una fuente, evidencia requerida,
-y quedar en `status: 'AI_PROPOSED'` hasta aprobación humana explícita — el esquema de
+El encargo exige que la IA no cree preguntas libremente **dentro del banco interno**. En
+este proyecto, el **proveedor de IA no genera preguntas del banco directamente**: solo
+extrae hallazgos estructurados (`ai-engine`), y es el motor de preguntas (determinista,
+basado en el banco versionado) el que decide qué preguntas del banco mostrar según esos
+hallazgos, dentro del flujo de preguntas/respuestas de la propia aplicación
+(`/diagnosticos/[id]/cuestionario`). Si en el futuro se habilita generación de preguntas
+candidatas por IA **para ese banco interno** (ver `AI_ENGINE.md` y `ROADMAP.md`), deben
+cumplir el mismo contrato: vinculación a una regla, una fuente, evidencia requerida, y
+quedar en `status: 'AI_PROPOSED'` hasta aprobación humana explícita — el esquema de
 `Question` ya contempla ese estado.
+
+Existe además, como artefacto **separado** (no forma parte de este banco ni del flujo de
+preguntas/respuestas interno), un **cuestionario personalizado para envío directo al
+cliente**: ahí la IA sí redacta texto libremente, citando hechos concretos de la
+transcripción y del sitio web de esa organización — ver la sección correspondiente en
+`AI_ENGINE.md`. La salvaguarda ahí no es "vinculación a una regla del banco", sino que
+cada elemento generado debe tener forma de pregunta (nunca una afirmación de hecho) y solo
+puede citar detalles presentes en la evidencia entregada; el abogado siempre lo revisa
+antes de enviarlo.
 
 ## Edición por el abogado
 

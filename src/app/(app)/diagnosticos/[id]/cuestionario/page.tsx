@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { Card, EmptyState, LinkButton } from '@/components/ui/primitives';
 import { DiagnosisTabs } from '@/components/diagnoses/diagnosis-tabs';
 import { GenerateQuestionnaireButton } from '@/components/diagnoses/questionnaire-generate-button';
+import { GeneratePersonalizedQuestionnaireButton } from '@/components/diagnoses/personalized-questionnaire-button';
 import { QuestionAnswerRow } from '@/components/diagnoses/question-answer-row';
 
 export default async function QuestionnairePage({ params }: { params: { id: string } }) {
@@ -74,6 +75,17 @@ export default async function QuestionnairePage({ params }: { params: { id: stri
               />
             ))}
           </div>
+
+          <Card>
+            <h2 className="text-base font-semibold text-brand-900">Cuestionario personalizado para el cliente</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Redacta, con apoyo de IA, un cuestionario a medida de esta organización (citando hechos concretos de la transcripción y del análisis
+              web) para enviarlo directamente al cliente. Revíselo siempre antes de enviarlo.
+            </p>
+            <div className="mt-3">
+              <GeneratePersonalizedQuestionnaireButton diagnosisId={diagnosis.id} />
+            </div>
+          </Card>
 
           <div className="flex justify-end gap-3">
             <LinkButton href={`/diagnosticos/${diagnosis.id}/editor-cuestionario`} variant="secondary">

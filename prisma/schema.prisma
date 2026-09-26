@@ -849,6 +849,7 @@ model Export {
   questionnaireId String?
   questionnaire   Questionnaire? @relation(fields: [questionnaireId], references: [id], onDelete: SetNull)
   format          ExportFormat
+  kind            ExportKind     @default(DIAGNOSTICO_COMPLETO)
   generatedById   String
   generatedBy     User           @relation(fields: [generatedById], references: [id])
   generatedAt     DateTime       @default(now())
@@ -856,6 +857,14 @@ model Export {
   checksumSha256  String
 
   @@index([diagnosisId])
+}
+
+// DIAGNOSTICO_COMPLETO: informe interno (hallazgos, mapa jurídico, cuestionario, revisión, aprobación).
+// CUESTIONARIO_PERSONALIZADO: cuestionario redactado a medida del cliente (con o sin IA real, ver
+// ai-engine/providers) para que el abogado lo revise y lo envíe directamente al cliente.
+enum ExportKind {
+  DIAGNOSTICO_COMPLETO
+  CUESTIONARIO_PERSONALIZADO
 }
 
 // ---------------------------------------------------------------------------

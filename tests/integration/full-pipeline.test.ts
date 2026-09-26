@@ -5,6 +5,8 @@ import { runFullAnalysis } from '@/server/diagnosis-orchestrator';
 import { generateQuestionnaire } from '@/modules/question-engine/engine';
 import { runReview } from '@/modules/review-engine/engine';
 import { generateExport } from '@/modules/export';
+import { generatePersonalizedQuestionnaireExport } from '@/modules/export/personalized-questionnaire';
+import { readFile } from '@/modules/document-processing/storage';
 
 const db = new PrismaClient();
 
@@ -95,6 +97,12 @@ describe('pipeline completo end-to-end (integración con PostgreSQL real)', () =
 
     const updatedDiagnosis = await db.diagnosis.findUniqueOrThrow({ where: { id: diagnosis.id } });
     expect(['IN_REVIEW', 'EXPORTED']).toContain(updatedDiagnosis.status);
+
+    const personalizedExport = await generatePersonalizedQuestionnaireExport(diagnosis.id, userId);
+    expect(personalizedExport.kind).toBe('CUESTIONARIO_PERSONALIZADO');
+    expect(personalizedExport.format).toBe('DOCX');
+    const docxBuffer = await readFile(personalizedExport.storageKey);
+    expect(docxBuffer.length).toBeGreaterThan(0);
   }, 60000);
 
   it('genera cuestionarios distintos para cada sector (no un formulario genérico idéntico)', () => {

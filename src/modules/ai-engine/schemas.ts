@@ -67,3 +67,43 @@ export function validateNoHallucination(output: MeetingAnalysisOutput): string[]
   }
   return errors;
 }
+
+// ---------------------------------------------------------------------------
+// Cuestionario personalizado (redactado a medida del cliente, para envío directo)
+// ---------------------------------------------------------------------------
+
+export const personalizedQuestionnaireModuleSchema = z.object({
+  title: z.string().min(1),
+  intro: z.string().min(1),
+  questions: z.array(z.string().min(1)).min(1),
+});
+
+export const personalizedQuestionnaireOutputSchema = z.object({
+  greeting: z.string().min(1),
+  confidentialityNote: z.string().min(1),
+  modules: z.array(personalizedQuestionnaireModuleSchema).min(1),
+  closingNote: z.string().min(1),
+});
+
+export type PersonalizedQuestionnaireModule = z.infer<typeof personalizedQuestionnaireModuleSchema>;
+export type PersonalizedQuestionnaireOutput = z.infer<typeof personalizedQuestionnaireOutputSchema>;
+
+/**
+ * Chequeo mínimo de trazabilidad: cada pregunta debe poder referirse a texto
+ * disponible en la evidencia entregada (transcripción + hallazgos web) — no
+ * se puede verificar semánticamente que la IA no "inventó" un detalle, pero
+ * sí se rechaza una salida que mencione un norma fuera del catálogo cerrado
+ * o que se salga de la forma de pregunta (una afirmación categórica en vez
+ * de una pregunta es una señal de que la IA está concluyendo, no preguntando).
+ */
+export function validatePersonalizedQuestionnaire(output: PersonalizedQuestionnaireOutput): string[] {
+  const errors: string[] = [];
+  for (const mod of output.modules) {
+    for (const q of mod.questions) {
+      if (!/[?¿]/.test(q)) {
+        errors.push(`Pregunta sin forma interrogativa en el módulo "${mod.title}": "${q.slice(0, 80)}"`);
+      }
+    }
+  }
+  return errors;
+}

@@ -32,11 +32,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const buffer = await readFile(exportRecord.storageKey);
   const extension = exportRecord.format.toLowerCase();
+  const baseName = exportRecord.kind === 'CUESTIONARIO_PERSONALIZADO' ? 'cuestionario-personalizado' : 'diagnostico';
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'content-type': CONTENT_TYPES[exportRecord.format] ?? 'application/octet-stream',
-      'content-disposition': `attachment; filename="pymelegal-diagnostico-${exportRecord.diagnosisId}.${extension}"`,
+      'content-disposition': `attachment; filename="pymelegal-${baseName}-${exportRecord.diagnosisId}.${extension}"`,
       'cache-control': 'private, no-store',
     },
   });
