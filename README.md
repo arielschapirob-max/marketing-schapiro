@@ -35,6 +35,13 @@ test:e2e`).
   modo síncrono, documentado como decisión de arquitectura para el tamaño actual del
   proyecto (ver `ARCHITECTURE.md`)
 
+## Uso local sin terminal (Windows, un solo usuario)
+
+Si quieres correr PymeLegal en tu propio PC sin usar la línea de comandos, sigue
+**[`INSTALAR_EN_TU_PC.md`](./INSTALAR_EN_TU_PC.md)**: instala Docker Desktop una vez y
+luego usas `Iniciar PymeLegal.bat` / `Detener PymeLegal.bat` con doble clic. La sección
+siguiente es para desarrollo con Node.js/PostgreSQL instalados directamente.
+
 ## Requisitos previos
 
 - Node.js 20+ y npm
@@ -103,6 +110,7 @@ npm run check-env      # valida variables de entorno y reporta qué está en MOD
 
 | Archivo | Contenido |
 |---|---|
+| `INSTALAR_EN_TU_PC.md` | Instalación local sin terminal para un solo usuario (Windows + Docker) |
 | `ARCHITECTURE.md` | Arquitectura general, módulos, decisiones de diseño |
 | `LEGAL_ENGINE.md` | Motor jurídico, reglas, vigencia, fuentes, limitaciones de verificación |
 | `QUESTION_ENGINE.md` | Motor de preguntas, condiciones, generación de cuestionario |
