@@ -8,6 +8,14 @@
 # correcta para este caso de uso (ver docker/entrypoint.sh).
 FROM node:20-bookworm-slim
 
+# El Prisma Query Engine necesita OpenSSL para hablar con PostgreSQL; la
+# imagen "slim" no lo trae instalado, lo que hace que las migraciones fallen
+# en bucle infinito con "Schema engine error" (detectado en una prueba real
+# en Windows). Se instala explícitamente, tal como sugiere el propio error
+# de Prisma.
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
