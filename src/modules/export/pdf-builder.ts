@@ -1,4 +1,6 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFImage } from 'pdf-lib';
 
 const PAGE_WIDTH = 595.28; // A4
 const PAGE_HEIGHT = 841.89;
@@ -6,6 +8,11 @@ const MARGIN = 56;
 const BRAND_COLOR = rgb(0.06, 0.15, 0.26); // brand-900
 const GOLD_COLOR = rgb(0.66, 0.5, 0.18);
 const MUTED_COLOR = rgb(0.4, 0.44, 0.5);
+
+const LOGO_PATH = path.join(process.cwd(), 'public', 'brand', 'pymelegal-logo.jpg');
+// Dimensiones reales del archivo (224x84 px) escaladas manteniendo proporción.
+const LOGO_WIDTH = 150;
+const LOGO_HEIGHT = 56.25;
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(/\s+/);
@@ -28,6 +35,7 @@ export class PdfBuilder {
   private doc!: PDFDocument;
   private font!: PDFFont;
   private boldFont!: PDFFont;
+  private logoImage: PDFImage | null = null;
   private page!: PDFPage;
   private y = 0;
   private pageNumber = 0;
@@ -44,6 +52,12 @@ export class PdfBuilder {
     builder.doc = await PDFDocument.create();
     builder.font = await builder.doc.embedFont(StandardFonts.Helvetica);
     builder.boldFont = await builder.doc.embedFont(StandardFonts.HelveticaBold);
+    try {
+      const logoBytes = await fs.readFile(LOGO_PATH);
+      builder.logoImage = await builder.doc.embedJpg(logoBytes);
+    } catch {
+      builder.logoImage = null;
+    }
     builder.doc.setTitle(title);
     builder.doc.setProducer('PymeLegal');
     builder.doc.setCreator('PymeLegal — Generador Inteligente de Diagnósticos de Protección de Datos');
@@ -94,20 +108,30 @@ export class PdfBuilder {
   addCoverPage(opts: { organizationName: string; diagnosisTitle: string; version: number; regime: string }) {
     this.addPage();
     this.page.drawRectangle({ x: 0, y: PAGE_HEIGHT - 220, width: PAGE_WIDTH, height: 220, color: BRAND_COLOR });
-    this.page.drawText('PymeLegal', {
-      x: MARGIN,
-      y: PAGE_HEIGHT - 90,
-      size: 30,
-      font: this.boldFont,
-      color: rgb(1, 1, 1),
-    });
-    this.page.drawText('[LOGO PENDIENTE — ver docs/README.md, activo de marca oficial no provisto]', {
-      x: MARGIN,
-      y: PAGE_HEIGHT - 112,
-      size: 8,
-      font: this.font,
-      color: rgb(0.85, 0.85, 0.85),
-    });
+    if (this.logoImage) {
+      const badgePadding = 10;
+      this.page.drawRectangle({
+        x: MARGIN - badgePadding,
+        y: PAGE_HEIGHT - 110 - badgePadding,
+        width: LOGO_WIDTH + badgePadding * 2,
+        height: LOGO_HEIGHT + badgePadding * 2,
+        color: rgb(1, 1, 1),
+      });
+      this.page.drawImage(this.logoImage, {
+        x: MARGIN,
+        y: PAGE_HEIGHT - 110,
+        width: LOGO_WIDTH,
+        height: LOGO_HEIGHT,
+      });
+    } else {
+      this.page.drawText('PymeLegal', {
+        x: MARGIN,
+        y: PAGE_HEIGHT - 90,
+        size: 30,
+        font: this.boldFont,
+        color: rgb(1, 1, 1),
+      });
+    }
     this.page.drawText('Generador Inteligente de Diagnósticos de Protección de Datos', {
       x: MARGIN,
       y: PAGE_HEIGHT - 135,

@@ -1,5 +1,12 @@
-import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType } from 'docx';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, ImageRun } from 'docx';
 import type { ReportData } from './build-report-data';
+
+const NAVY = '0E2841';
+const LOGO_PATH = path.join(process.cwd(), 'public', 'brand', 'pymelegal-logo.jpg');
+const LOGO_WIDTH = 130;
+const LOGO_HEIGHT = 49;
 
 const TYPE_LABELS: Record<string, string> = {
   PROCESSING_ACTIVITY: 'Tratamientos de datos',
@@ -17,11 +24,22 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export async function buildDiagnosisDocx(data: ReportData): Promise<Buffer> {
-  const children: Paragraph[] = [
-    new Paragraph({ text: 'PymeLegal', heading: HeadingLevel.TITLE }),
-    new Paragraph({
-      children: [new TextRun({ text: '[LOGO PENDIENTE — activo de marca oficial no provisto, ver README.md]', italics: true })],
-    }),
+  let logoImage: Buffer | null = null;
+  try {
+    logoImage = await fs.readFile(LOGO_PATH);
+  } catch {
+    logoImage = null;
+  }
+
+  const children: Paragraph[] = [];
+  if (logoImage) {
+    children.push(
+      new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ data: logoImage, type: 'jpg', transformation: { width: LOGO_WIDTH, height: LOGO_HEIGHT } })] }),
+    );
+  } else {
+    children.push(new Paragraph({ children: [new TextRun({ text: 'PymeLegal', bold: true, color: NAVY, size: 44 })] }));
+  }
+  children.push(
     new Paragraph({ text: 'Generador Inteligente de Diagnósticos de Protección de Datos', heading: HeadingLevel.HEADING_2 }),
     new Paragraph({ text: `Organización: ${data.organization.legalName}` }),
     new Paragraph({ text: `Diagnóstico: ${data.diagnosis.title}` }),
@@ -45,7 +63,7 @@ export async function buildDiagnosisDocx(data: ReportData): Promise<Buffer> {
     }),
 
     new Paragraph({ text: '2. Mapa de hallazgos', heading: HeadingLevel.HEADING_1 }),
-  ];
+  );
 
   for (const [type, findings] of data.findingsByType) {
     children.push(new Paragraph({ text: TYPE_LABELS[type] ?? type, heading: HeadingLevel.HEADING_2 }));
