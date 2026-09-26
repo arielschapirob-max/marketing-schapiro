@@ -150,8 +150,12 @@ export const SECTORIAL_QUESTIONS: QuestionSeed[] = [
     answerType: 'YES_NO_UNKNOWN',
     required: true,
     order: 400,
-    justification: 'El scoring automatizado sin intervención humana es un foco de riesgo relevante y potencial materia del nuevo régimen.',
+    justification:
+      'El artículo 9º de la Ley N.º 19.628 (vigente, verificado contra el texto oficial de BCN) prohíbe expresamente "la realización de todo tipo de predicciones o evaluaciones de riesgo comercial que no estén basadas únicamente en información objetiva relativa a las morosidades o protestos" de la persona evaluada; su infracción obliga a eliminar de inmediato la información. Bajo el régimen futuro, el scoring automatizado sin intervención humana también puede activar el derecho de oposición a decisiones automatizadas (Ley N.º 21.719, artículo 8º bis).',
     legalMatter: 'Financiero — decisiones automatizadas',
+    norm: 'Ley N.º 19.628',
+    article: 'Artículo 9º',
+    source: 'L19628-006',
     riskLevel: 'alto',
     sectorKeys: ['financiero'],
     visibilityCondition: { op: 'always' },

@@ -2,11 +2,13 @@
 
 ## Limitaciones conocidas (honestas, sin ocultar)
 
-1. **Ninguna regla jurídica está verificada contra el texto oficial vigente.** El proxy de
-   red de este entorno bloquea `bcn.cl` y las demás fuentes oficiales listadas en el
-   encargo. Todas las reglas están marcadas `REQUIERE_VALIDACION_JURIDICA`. Ver
-   `LEGAL_ENGINE.md`. **Esto debe resolverse antes de usar el sistema con un cliente
-   real.**
+1. **5 de las 21 reglas jurídicas (normativa sectorial y constitucional) no están
+   verificadas contra el texto oficial vigente.** El proxy de red de este entorno bloquea
+   `bcn.cl` y las demás fuentes oficiales; para la Ley 19.628 y la Ley 21.719 el usuario
+   resolvió esto adjuntando los PDF oficiales directamente, y esas 12 reglas ya están
+   `VALIDADA`. Faltan por verificar `L20584-001` (Ley 20.584), `L21663-001` (Ley 21.663),
+   `L21459-001` (Ley 21.459) y `CPR-001` (Constitución). Ver `LEGAL_ENGINE.md`. **Esto
+   debe resolverse antes de usar el sistema con un cliente real en esas materias.**
 2. **El proveedor de IA real (Anthropic/OpenAI) no fue probado en vivo** — código
    completo, sin validación de red. Ver `AI_ENGINE.md`.
 3. **El análisis web no fue probado contra un sitio real** en este entorno — código

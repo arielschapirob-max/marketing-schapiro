@@ -20,8 +20,9 @@ completa de evidencia.
 módulos de dominio (`legal-engine`, `question-engine`, `ai-engine`,
 `document-processing`, `meeting-analysis`, `web-analysis`, `review-engine`, `export`,
 `audit`), capa de Server Actions, 22 pantallas autenticadas y 2 públicas, esquema de base
-de datos con ~35 modelos, 17 reglas jurídicas, 22 sectores regulatorios, 34 preguntas del
-banco, y documentación completa (12 archivos + este informe).
+de datos con ~35 modelos, 21 reglas jurídicas (12 de ellas validadas contra el texto
+oficial de BCN, ver sección 6), 22 sectores regulatorios, 34 preguntas del banco, y
+documentación completa (12 archivos + este informe).
 
 Ver `ARCHITECTURE.md` para el detalle módulo por módulo y las decisiones de diseño
 (incluida la razón de cada consolidación deliberada frente a la especificación original,
@@ -99,26 +100,39 @@ Oficial, Superintendencia de Salud, Ministerio de Salud, Superintendencia de Edu
 CMF, Dirección del Trabajo, SERNAC, Tribunal Constitucional, Poder Judicial, Contraloría
 General de la República, Consejo para la Transparencia.
 
-**Ninguna regla está validada contra el texto oficial** (`validationStatus:
-'REQUIERE_VALIDACION_JURIDICA'` en las 17 reglas cargadas), porque el proxy de red de
-este entorno de desarrollo bloquea el acceso directo a `bcn.cl` y al resto de las fuentes
-oficiales (confirmado con un intento real de `WebFetch`, que devolvió
-`EGRESS_BLOCKED`). Se usó búsqueda web general únicamente para contrastar hechos de alto
-nivel ampliamente coincidentes entre fuentes secundarias (existencia y número de cada ley,
-fecha de publicación de la Ley 21.719, su vigencia general, la creación de la Agencia de
-Protección de Datos Personales) — nunca para citar un artículo o inciso específico como
-si estuviera confirmado. Ver `LEGAL_ENGINE.md` para el detalle completo y las
-instrucciones de cómo un abogado debe verificar y "graduar" cada regla a `VALIDADA`.
+**Actualización posterior a la entrega inicial:** el proxy de red de este entorno bloquea
+el acceso directo a `bcn.cl` (confirmado repetidamente con `WebFetch`, incluso después de
+que el usuario agregó el dominio a la lista de permitidos de su entorno — ese cambio solo
+aplica a sesiones nuevas). Para resolverlo, el usuario descargó y adjuntó directamente los
+PDF oficiales de BCN de la **Ley N.º 19.628** y la **Ley N.º 21.719**. Ambos se leyeron
+íntegramente (13 y 56 páginas respectivamente) y se contrastaron artículo por artículo
+contra el motor jurídico. Como resultado, **12 de las 17 reglas originales (las 6 de la
+Ley 19.628 y las 11 de la Ley 21.719, tras agregar 3 reglas nuevas con base directa en el
+texto oficial) pasaron a `validationStatus: 'VALIDADA'`**, cada una citando el artículo
+exacto y un extracto textual verbatim. Este proceso también corrigió un error real de la
+revisión anterior (un derecho que se había quitado por no encontrarlo en fuentes
+secundarias, y que sí existe en el artículo 8 bis) y resolvió una contradicción entre
+fuentes secundarias sobre si el Delegado de Protección de Datos es obligatorio (el
+artículo 50 confirma que es **voluntario**). Las **5 reglas restantes** (`L20584-001`,
+`L21663-001`, `L21459-001`, `CPR-001`) siguen `REQUIERE_VALIDACION_JURIDICA`: no se
+dispuso del PDF oficial de la Ley 20.584, la Ley 21.663, la Ley 21.459 ni de la
+Constitución en este entorno. Ver `LEGAL_ENGINE.md`, sección "Historial de verificación",
+para el detalle completo de cada hallazgo y corrección.
 
-Reglas cargadas: 5 de la Ley 19.628 (vigente), 8 de la Ley 21.719 (régimen futuro), y 4
-de normativa sectorial/constitucional (Ley 20.584 salud, Ley 21.663 ciberseguridad, Ley
-21.459 delitos informáticos, referencia constitucional general).
+Reglas cargadas: 6 de la Ley 19.628 (vigente, validadas), 11 de la Ley 21.719 (régimen
+futuro, validadas), y 4 de normativa sectorial/constitucional pendientes de validación
+(Ley 20.584 salud, Ley 21.663 ciberseguridad, Ley 21.459 delitos informáticos, referencia
+constitucional general).
 
 ## 7. Limitaciones que subsisten
 
 Ver `ROADMAP.md` para la lista completa y priorizada. Las más relevantes:
 
-- **REQUIERE VALIDACIÓN JURÍDICA**: las 17 reglas jurídicas, en su totalidad.
+- **REQUIERE VALIDACIÓN JURÍDICA**: las 5 reglas de normativa sectorial/constitucional
+  (`L20584-001`, `L21663-001`, `L21459-001`, `CPR-001`), sin PDF oficial disponible en este
+  entorno. Las 12 reglas de la Ley 19.628 y la Ley 21.719 ya están `VALIDADA` contra el
+  texto oficial de BCN (ver `LEGAL_ENGINE.md`), aunque siguen sujetas a reconfirmación
+  periódica si la ley se modifica después de la fecha del PDF revisado (20-mar-2026).
 - **PENDIENTE DE IMPLEMENTACIÓN**: adaptador S3 real, antivirus real, OCR real,
   extracción de `.xlsx`, generación de preguntas candidatas por IA, UI de administración
   de reglas/preguntas (el modelo de datos ya lo soporta), rate limiting, cifrado de campos
@@ -153,8 +167,10 @@ importantes:
 ## 10. Tareas futuras pendientes
 
 Ver `ROADMAP.md`, secciones "Corto/mediano/largo plazo". La prioridad inmediata antes de
-cualquier uso con un cliente real es la verificación jurídica artículo por artículo de
-las 17 reglas contra el texto oficial vigente en bcn.cl.
+cualquier uso con un cliente real es verificar contra el texto oficial vigente en bcn.cl
+las 5 reglas de normativa sectorial/constitucional que aún no lo están (Ley 20.584, Ley
+21.663, Ley 21.459, Constitución), y reconfirmar periódicamente las 12 reglas ya validadas
+de la Ley 19.628/21.719 por si se modifican después de la fecha del PDF revisado.
 
 ## 11. Honestidad del reporte
 

@@ -4,23 +4,28 @@ import type { RuleRegime } from '@prisma/client';
 /**
  * Control de vigencia temporal de la Ley N.º 21.719.
  *
- * Fuente: publicación en el Diario Oficial el 13 de diciembre de 2024, con
- * vigencia general diferida al 1 de diciembre de 2026 (verificada mediante
- * múltiples fuentes secundarias coincidentes; el texto oficial de bcn.cl no
- * pudo consultarse en este entorno — ver LEGAL_ENGINE.md, sección
- * "Limitaciones de verificación"). Ambas fechas son configurables vía
- * variables de entorno para que puedan actualizarse si una fuente oficial
- * dispone otra cosa, sin tocar código.
+ * Fuente: VERIFICADO contra el texto oficial de BCN (PDF de la Ley N.º
+ * 21.719 aportado por el usuario, 56 páginas, generado el 20-mar-2026,
+ * última modificación 05-feb-2026 por Ley 21.806). La disposición
+ * transitoria "Artículo primero" de la propia ley dispone: "Las
+ * modificaciones a las leyes N° 19.628 (...) entrarán en vigencia el día
+ * primero del mes vigésimo cuarto posterior a la publicación de esta ley en
+ * el Diario Oficial" — publicada el 13-dic-2024, 24 meses después cae el
+ * 1-dic-2026. Los propios metadatos del documento de BCN confirman
+ * "Versión: Con Vigencia Diferida por Fecha De: 01-DIC-2026", y la versión
+ * vigente de la Ley 19.628 revisada en paralelo declara "Fin Vigencia:
+ * 30-NOV-2026" — ambas fuentes oficiales coinciden exactamente. La Ley
+ * 21.806 (05-feb-2026) solo modificó el procedimiento transitorio de
+ * nombramiento de los primeros consejeros de la Agencia, no esta fecha.
  *
- * ALERTA DE SEGUIMIENTO: existe un proyecto de ley en trámite (boletín
- * 18.623-07, moción/mensaje presidencial presentado el 31 de agosto) que
- * propondría postergar la vigencia general al 1 de diciembre de 2027. Al
- * momento de esta revisión, la fecha vigente conforme al texto de la Ley
- * 21.719 seguiría siendo el 1 de diciembre de 2026, pero esto debe
- * confirmarse periódicamente contra bcn.cl/Congreso, ya que el boletín
- * 18.623-07 podría aprobarse y modificar esta fecha. Si eso ocurre, basta
- * con actualizar LEY_21719_VIGENCIA_GENERAL en el entorno — no requiere
- * cambios de código.
+ * ALERTA DE SEGUIMIENTO: al buscar fuentes secundarias (antes de tener el
+ * PDF oficial) se detectó un proyecto de ley en trámite (boletín 18.623-07)
+ * que propondría postergar la vigencia general a 2027. El documento oficial
+ * más reciente disponible (20-mar-2026) no refleja ese cambio, pero como
+ * este análisis puede ejecutarse en una fecha posterior, se recomienda
+ * reconfirmar contra bcn.cl antes de cada uso en producción. Si la fecha
+ * cambiara, basta con actualizar LEY_21719_VIGENCIA_GENERAL en el entorno —
+ * no requiere cambios de código.
  */
 export function getLey21719Fechas() {
   const env = getEnv();
