@@ -45,33 +45,39 @@ FORMA:
 - Cada pregunta "abierta" debe tener forma interrogativa real (terminar en "?"), nunca ser una afirmación.
   El cuestionario pregunta, no concluye — no emitas conclusiones jurídicas ni afirmes que algo "infringe" o
   "cumple" una norma. No cites artículos de ley: este documento solo recopila información del negocio.
-- Usa también preguntas "cerradas" quirúrgicamente elegidas (con 2 a 5 opciones tipo checkbox, más "No sé"
+- Usa también preguntas "cerradas" quirúrgicamente elegidas (con 2 a 4 opciones tipo checkbox, más "No sé"
   cuando aplique) para los puntos donde una respuesta acotada basta — igual que alternarías entre pregunta
-  abierta y de alternativas al conversar con el cliente. Marca "allowsDetail: true" si conviene dejar espacio
-  para explicar la opción elegida.
-- Organiza el contenido en 8 a 16 módulos temáticos específicos del negocio real (no genéricos como
+  abierta y de alternativas al conversar con el cliente. Marca "allowsDetail: true" solo cuando de verdad
+  conviene dejar espacio para explicar la opción elegida.
+- Organiza el contenido en 6 a 9 módulos temáticos específicos del negocio real (no genéricos como
   "Organización" a secas: preferible algo como "La ficha de brief (formulario de ingreso)" o "Plataforma de
-  órdenes digitales de derivadores" cuando la evidencia lo permite). Cada módulo lleva: título corto (sin
-  numeración, el sistema la agrega), "areaResponsible" (a qué área del cliente le correspondería responder,
-  p. ej. "Gerencia", "Tecnología", "Administración" — infiere según el contenido), "phase"
-  ("FASE_1_ESENCIAL" para lo indispensable para un diagnóstico preliminar, "FASE_2_AMPLIACION" para lo
-  complementario), una frase de introducción, y preguntas numeradas "N.M" dentro del módulo.
+  órdenes digitales de derivadores" cuando la evidencia lo permite), con 2 a 4 preguntas por módulo. Cada
+  módulo lleva: título corto (sin numeración, el sistema la agrega), "areaResponsible" (a qué área del
+  cliente le correspondería responder, p. ej. "Gerencia", "Tecnología", "Administración" — infiere según el
+  contenido), "phase" ("FASE_1_ESENCIAL" para lo indispensable para un diagnóstico preliminar,
+  "FASE_2_AMPLIACION" para lo complementario), una frase de introducción breve, y preguntas numeradas "N.M".
+- LÍMITE DE ESPACIO (crítico): tu respuesta tiene un límite de tokens. Es preferible un JSON más corto pero
+  COMPLETO y bien cerrado, con menos módulos o preguntas de las permitidas, a uno más largo que quede
+  cortado a la mitad y sea inválido. Si notas que te estás quedando sin espacio, prioriza cerrar
+  correctamente el JSON (menos módulos, glosario más breve) antes que agotar el máximo permitido. Nunca
+  dejes una respuesta a medio terminar.
 - "coverPage": title ("CUESTIONARIO DE DIAGNÓSTICO"), subtitle (una frase describiendo el propósito),
   lawReference ("Ley N.º 21.719 sobre protección de datos personales"), preparedFor (nombre del cliente, con
   una frase breve entre paréntesis describiendo su giro si se conoce), contacts (nombre(s) de contacto si se
   conocen, si no "No informado").
-- "presentation": 2 a 4 párrafos como los de una carta de presentación real: qué es este cuestionario, por qué
-  se diseñó específicamente para la operación real de este cliente (menciona 2-3 detalles concretos de su
-  negocio aquí), y qué se hará con las respuestas.
-- "howToRespond": 3 a 6 instrucciones breves sobre cómo completar el documento (que "No sé" es una respuesta
+- "presentation": 2 a 3 párrafos breves como los de una carta de presentación real: qué es este cuestionario,
+  por qué se diseñó específicamente para la operación real de este cliente (menciona 2-3 detalles concretos
+  de su negocio aquí), y qué se hará con las respuestas.
+- "howToRespond": 2 a 4 instrucciones breves sobre cómo completar el documento (que "No sé" es una respuesta
   válida, que se puede adjuntar documentos, etc.).
 - "confidentialityNote": una frase sobre confidencialidad de la información entregada.
-- "glossary": 5 a 15 términos técnicos o del rubro del cliente que aparezcan en las preguntas y que un no
+- "glossary": máximo 6 términos técnicos o del rubro del cliente que aparezcan en las preguntas y que un no
   especialista podría no conocer (p. ej. si el rubro es salud: "ficha clínica"; si es tecnológico: términos
-  como "encargado del tratamiento", "cifrado"). Vacío si no aplica ningún término especializado.
-- "documentChecklist": lista de documentos concretos que convendría pedir que el cliente adjunte (contratos,
+  como "encargado del tratamiento", "cifrado"), con definiciones de una sola frase. Vacío si no aplica ningún
+  término especializado.
+- "documentChecklist": máximo 5 documentos concretos que convendría pedir que el cliente adjunte (contratos,
   políticas, capturas de pantalla) dados los hallazgos — vacío si no hay ninguno claro.
-- "closingNote": pide devolver el cuestionario respondido.`;
+- "closingNote": una frase breve pidiendo devolver el cuestionario respondido.`;
 
 /**
  * Proveedor "en vivo" para Anthropic/OpenAI. Requiere AI_API_KEY configurada.
@@ -105,9 +111,12 @@ export function createLiveAIProvider(): AIProvider {
       if (!res.ok) {
         throw new Error(`Anthropic API respondió ${res.status}: ${await res.text()}`);
       }
-      const data = (await res.json()) as { content: Array<{ type: string; text?: string }> };
+      const data = (await res.json()) as { content: Array<{ type: string; text?: string }>; stop_reason?: string };
       const text = data.content.find((c) => c.type === 'text')?.text;
       if (!text) throw new Error('Respuesta de Anthropic sin contenido de texto.');
+      if (data.stop_reason === 'max_tokens') {
+        throw new Error('La respuesta de la IA se cortó por alcanzar el límite de tokens antes de terminar. Intente de nuevo (el sistema ya pide un contenido más acotado para evitar esto).');
+      }
       return text;
     } finally {
       clearTimeout(timeout);
@@ -152,8 +161,16 @@ export function createLiveAIProvider(): AIProvider {
   }
 
   function parseJsonOrThrow(raw: string): unknown {
+    // Algunos modelos envuelven el JSON en un bloque de código markdown pese a
+    // la instrucción de no hacerlo; se despoja ese envoltorio antes de
+    // rechazar la salida como no estructurada.
+    const cleaned = raw
+      .trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/```\s*$/, '')
+      .trim();
     try {
-      return JSON.parse(raw);
+      return JSON.parse(cleaned);
     } catch {
       throw new Error('La IA no devolvió JSON válido. Salida rechazada (no se usan datos no estructurados).');
     }
