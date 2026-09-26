@@ -38,6 +38,28 @@ historial = (
 carpeta_salida = settings.output_dir / str(caso.id) / "informes"
 carpeta_salida.mkdir(parents=True, exist_ok=True)
 
+
+def _boton_descarga(clave_ruta: str, etiqueta: str) -> None:
+    """Muestra el botón de descarga solo si el archivo generado sigue en el
+    disco. Si el servidor se reinició o se limpió el directorio de salida
+    después de generar el documento, la ruta guardada en session_state queda
+    apuntando a un archivo que ya no existe — mejor avisar y pedir que se
+    regenere que dejar que ``open()`` reviente con un traceback.
+    """
+    ruta = st.session_state.get(clave_ruta)
+    if not ruta:
+        return
+    if not Path(ruta).exists():
+        st.warning(
+            f"El archivo generado anteriormente ya no está disponible en el servidor "
+            f"(¿se reinició o se limpió la carpeta de salida?). Genere «{etiqueta}» de nuevo."
+        )
+        del st.session_state[clave_ruta]
+        return
+    with open(ruta, "rb") as f:
+        st.download_button(etiqueta, f, file_name=Path(ruta).name)
+
+
 tab_interno, tab_comercial = st.tabs(["Informe interno (confidencial)", "Propuesta comercial"])
 
 with tab_interno:
@@ -60,20 +82,8 @@ with tab_interno:
         st.session_state["ruta_informe_docx"] = str(ruta_docx)
         st.session_state["ruta_informe_xlsx"] = str(ruta_xlsx)
 
-    if st.session_state.get("ruta_informe_docx"):
-        with open(st.session_state["ruta_informe_docx"], "rb") as f:
-            st.download_button(
-                "Descargar informe interno (DOCX)",
-                f,
-                file_name=Path(st.session_state["ruta_informe_docx"]).name,
-            )
-    if st.session_state.get("ruta_informe_xlsx"):
-        with open(st.session_state["ruta_informe_xlsx"], "rb") as f:
-            st.download_button(
-                "Descargar informe interno (XLSX)",
-                f,
-                file_name=Path(st.session_state["ruta_informe_xlsx"]).name,
-            )
+    _boton_descarga("ruta_informe_docx", "Descargar informe interno (DOCX)")
+    _boton_descarga("ruta_informe_xlsx", "Descargar informe interno (XLSX)")
 
 with tab_comercial:
     st.info(
@@ -129,19 +139,7 @@ with tab_comercial:
         st.session_state["ruta_propuesta_docx"] = str(ruta_docx)
         st.session_state["ruta_propuesta_pdf"] = str(ruta_pdf)
 
-    if st.session_state.get("ruta_propuesta_docx"):
-        with open(st.session_state["ruta_propuesta_docx"], "rb") as f:
-            st.download_button(
-                "Descargar propuesta (DOCX)",
-                f,
-                file_name=Path(st.session_state["ruta_propuesta_docx"]).name,
-            )
-    if st.session_state.get("ruta_propuesta_pdf"):
-        with open(st.session_state["ruta_propuesta_pdf"], "rb") as f:
-            st.download_button(
-                "Descargar propuesta (PDF)",
-                f,
-                file_name=Path(st.session_state["ruta_propuesta_pdf"]).name,
-            )
+    _boton_descarga("ruta_propuesta_docx", "Descargar propuesta (DOCX)")
+    _boton_descarga("ruta_propuesta_pdf", "Descargar propuesta (PDF)")
 
 session.close()
