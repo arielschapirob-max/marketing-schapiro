@@ -154,7 +154,7 @@ ${req.existingFindingSummaries.join('\n') || '(ninguno)'}
 export function createLiveAIProvider(): AIProvider {
   const env = getEnv();
 
-  async function callAnthropic(systemPrompt: string, prompt: string, maxTokens = 8192): Promise<string> {
+  async function callAnthropic(systemPrompt: string, prompt: string, maxTokens = 8192, context = 'la generación'): Promise<string> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), env.AI_TIMEOUT_MS);
     try {
@@ -180,7 +180,7 @@ export function createLiveAIProvider(): AIProvider {
       const text = data.content.find((c) => c.type === 'text')?.text;
       if (!text) throw new Error('Respuesta de Anthropic sin contenido de texto.');
       if (data.stop_reason === 'max_tokens') {
-        throw new Error('La respuesta de la IA se cortó por alcanzar el límite de tokens antes de terminar. Intente de nuevo (el sistema ya pide un contenido más acotado para evitar esto).');
+        throw new Error(`La respuesta de la IA se cortó por alcanzar el límite de tokens antes de terminar en ${context}. Intente de nuevo.`);
       }
       return text;
     } finally {
@@ -188,7 +188,7 @@ export function createLiveAIProvider(): AIProvider {
     }
   }
 
-  async function callOpenAI(systemPrompt: string, prompt: string, maxTokens = 8192): Promise<string> {
+  async function callOpenAI(systemPrompt: string, prompt: string, maxTokens = 8192, context = 'la generación'): Promise<string> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), env.AI_TIMEOUT_MS);
     try {
@@ -212,19 +212,22 @@ export function createLiveAIProvider(): AIProvider {
       if (!res.ok) {
         throw new Error(`OpenAI API respondió ${res.status}: ${await res.text()}`);
       }
-      const data = (await res.json()) as { choices: Array<{ message: { content: string } }> };
+      const data = (await res.json()) as { choices: Array<{ message: { content: string }; finish_reason?: string }> };
       const text = data.choices[0]?.message.content;
       if (!text) throw new Error('Respuesta de OpenAI sin contenido.');
+      if (data.choices[0]?.finish_reason === 'length') {
+        throw new Error(`La respuesta de la IA se cortó por alcanzar el límite de tokens antes de terminar en ${context}. Intente de nuevo.`);
+      }
       return text;
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  async function callModel(systemPrompt: string, prompt: string, maxTokens?: number): Promise<string> {
+  async function callModel(systemPrompt: string, prompt: string, maxTokens?: number, context?: string): Promise<string> {
     return env.AI_PROVIDER === 'openai'
-      ? callOpenAI(systemPrompt, prompt, maxTokens)
-      : callAnthropic(systemPrompt, prompt, maxTokens);
+      ? callOpenAI(systemPrompt, prompt, maxTokens, context)
+      : callAnthropic(systemPrompt, prompt, maxTokens, context);
   }
 
   function parseJsonOrThrow(raw: string): unknown {
@@ -277,7 +280,7 @@ elementos en "modulePlans" como la evidencia realmente amerite):
   "modulePlans": [{ "title": "...", "areaResponsible": "...", "phase": "FASE_1_ESENCIAL", "focus": "..." }]
 }`;
 
-      const planRaw = await callModel(QUESTIONNAIRE_PLANNING_SYSTEM_PROMPT, planPrompt, 4096);
+      const planRaw = await callModel(QUESTIONNAIRE_PLANNING_SYSTEM_PROMPT, planPrompt, 8192, 'la planificación del cuestionario');
       const planParsed = personalizedQuestionnairePlanSchema.safeParse(parseJsonOrThrow(planRaw));
       if (!planParsed.success) {
         throw new Error(`Planificación del cuestionario rechazada por no cumplir el esquema: ${planParsed.error.message}`);
@@ -303,7 +306,12 @@ Devuelve el JSON con esta forma exacta (los "..." son ejemplos de contenido, no 
   "questions": [{ "text": "...?", "type": "abierta" }, { "text": "...?", "type": "cerrada", "options": ["Sí", "No", "No sé"], "allowsDetail": true }]
 }`;
 
-        const moduleRaw = await callModel(QUESTIONNAIRE_MODULE_SYSTEM_PROMPT, modulePrompt, 3072);
+        const moduleRaw = await callModel(
+          QUESTIONNAIRE_MODULE_SYSTEM_PROMPT,
+          modulePrompt,
+          8192,
+          `el módulo "${modulePlan.title}" (${i + 1} de ${modulePlans.length})`,
+        );
         const moduleParsed = personalizedQuestionnaireModuleContentSchema.safeParse(parseJsonOrThrow(moduleRaw));
         if (!moduleParsed.success) {
           throw new Error(`Contenido del módulo "${modulePlan.title}" rechazado por no cumplir el esquema: ${moduleParsed.error.message}`);
