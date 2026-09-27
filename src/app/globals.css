@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-bg: #f7f9fc;
+  --brand-fg: #0f2542;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--brand-bg);
+  color: var(--brand-fg);
+}
+
+.focus-ring {
+  @apply outline-none ring-2 ring-offset-2 ring-brand-600 ring-offset-white;
+}
+
+.badge-confirmado { @apply bg-certainty-confirmado/10 text-certainty-confirmado border border-certainty-confirmado/30; }
+.badge-probable { @apply bg-certainty-probable/10 text-certainty-probable border border-certainty-probable/30; }
+.badge-nodeterminado { @apply bg-certainty-nodeterminado/10 text-certainty-nodeterminado border border-certainty-nodeterminado/30; }
+.badge-inferido { @apply bg-certainty-inferido/10 text-certainty-inferido border border-certainty-inferido/30; }
+.badge-contradictorio { @apply bg-certainty-contradictorio/10 text-certainty-contradictorio border border-certainty-contradictorio/30; }
+
+.badge-riesgo-bajo { @apply bg-risk-bajo/10 text-risk-bajo border border-risk-bajo/30; }
+.badge-riesgo-medio { @apply bg-risk-medio/10 text-risk-medio border border-risk-medio/30; }
+.badge-riesgo-alto { @apply bg-risk-alto/10 text-risk-alto border border-risk-alto/30; }
+.badge-riesgo-critico { @apply bg-risk-critico/10 text-risk-critico border border-risk-critico/30; }
