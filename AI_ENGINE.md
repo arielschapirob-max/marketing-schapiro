@@ -62,18 +62,24 @@ interno de preguntas/respuestas dentro de la app).
   diagnóstico profesional real, no un formulario plano — portada (título, subtítulo,
   referencia legal, cliente, contactos), 2-4 párrafos de presentación adaptados al giro
   real del cliente, instrucciones de cómo responder, nota de confidencialidad, un glosario
-  de términos del rubro (si aplica), 8 a 16 módulos (cada uno con área responsable
-  sugerida, fase `FASE_1_ESENCIAL`/`FASE_2_AMPLIACION`, introducción, y preguntas
-  **abiertas o cerradas** — las cerradas con 2 a 5 opciones tipo checkbox y, si procede,
-  un campo de detalle), una lista de verificación de documentos a adjuntar, y un cierre.
+  de términos del rubro (si aplica), N módulos (cada uno con área responsable sugerida,
+  fase `FASE_1_ESENCIAL`/`FASE_2_AMPLIACION`, introducción, y preguntas **abiertas o
+  cerradas** — las cerradas con 2 a 4 opciones tipo checkbox y, si procede, un campo de
+  detalle), una lista de verificación de documentos a adjuntar, y un cierre.
   `validatePersonalizedQuestionnaire()` rechaza cualquier pregunta abierta sin forma
   interrogativa (la salida pregunta, nunca afirma como hecho algo no confirmado) y
   cualquier pregunta cerrada sin al menos dos opciones.
+- **El número de módulos y de preguntas NO está fijado**: cada organización aporta una
+  evidencia distinta (reunión + sitio web), así que un cuestionario "estándar" con un
+  rango prefijado de módulos estaría mal hecho por diseño. Ver "Generación en dos fases"
+  más abajo para cómo se logra esto sin quedar sujeto al techo de tokens de una sola
+  llamada.
 - **Con `AI_PROVIDER=mock`**: el proveedor mock **no finge redactar** — arma los módulos
   agrupando el banco de preguntas genérico por categoría (todas abiertas, sin glosario ni
   checklist) y lo dice explícitamente en la presentación ("[MODO MOCK: ... no fueron
   redactados por un modelo de lenguaje real ...]"). Es un resultado utilizable como
-  estructura, no como redacción personalizada real.
+  estructura, no como redacción personalizada real. El mock sigue siendo una única
+  llamada (no hay "fases" en modo mock: no hay nada que truncar porque no genera texto).
 - **Con un proveedor real** (`AI_PROVIDER=anthropic|openai` + `AI_API_KEY`): el modelo
   recibe instrucciones explícitas de (a) no mencionar ningún proveedor, cifra, plataforma,
   nombre propio o práctica que no esté literalmente presente en la evidencia entregada,
@@ -81,15 +87,45 @@ interno de preguntas/respuestas dentro de la app).
   formule como pregunta y nunca como afirmación, y (d) alcanzar un estándar de calidad
   "de abogado que estudió a fondo este cliente específico" — nombrando su negocio,
   herramientas y cifras reales, no un formulario genérico intercambiable entre clientes
-  del mismo rubro — ver `PERSONALIZED_QUESTIONNAIRE_SYSTEM_PROMPT` en `providers/live.ts`.
-  El límite de salida del modelo se fijó en 8192 tokens para dar espacio a esta
-  profundidad.
+  del mismo rubro.
+
+### Generación en dos fases (evidencia → estructura → contenido)
+
+`generatePersonalizedQuestionnaire()` en `providers/live.ts` hace **dos tipos de llamada**
+al modelo en vez de una sola, para que la profundidad del cuestionario surja de la
+evidencia real de cada organización y no de un rango arbitrario fijado en el prompt:
+
+1. **Planificación** (`QUESTIONNAIRE_PLANNING_SYSTEM_PROMPT`, una llamada, 4096 tokens):
+   recibe toda la evidencia (transcripción, hallazgos web, hallazgos ya extraídos) y
+   decide la portada, presentación, glosario, checklist, cierre, y la **lista de módulos**
+   que hacen falta (`modulePlans`: título, área responsable, fase, y un `focus` interno
+   que resume qué evidencia motiva ese módulo). No hay rango mínimo ni máximo de módulos
+   — solo un techo de sanidad técnica (`MAX_MODULES_SAFETY_CAP = 25`) para acotar costo y
+   tiempo, nunca presentado al modelo como un objetivo a alcanzar.
+2. **Contenido por módulo** (`QUESTIONNAIRE_MODULE_SYSTEM_PROMPT`, una llamada por módulo
+   planificado, secuencial, 3072 tokens cada una): recibe la misma evidencia completa más
+   el plan de ese módulo específico, y redacta su introducción y sus preguntas (abiertas o
+   cerradas), con la profundidad que ese tema puntual amerite. Cada módulo tiene su propio
+   presupuesto de tokens, así que un módulo con mucha evidencia no le quita espacio a los
+   demás ni queda cortado a la mitad — el problema que forzaba a limitar todo el
+   cuestionario a 6-9 módulos en la versión anterior de una sola llamada.
+
+El código numera las preguntas (`"1.1"`, `"1.2"`, `"2.1"`, ...) al ensamblar el resultado
+final, en vez de pedirle al modelo que mantenga una numeración consistente entre llamadas
+independientes. El objeto final se valida igual que antes contra
+`personalizedQuestionnaireOutputSchema` y `validatePersonalizedQuestionnaire()` — si
+cualquier llamada (de planificación o de un módulo) devuelve algo que no cumple su propio
+esquema intermedio, se lanza un error inmediatamente y no se generan datos parciales o
+inventados.
+
 - Se exporta a `.docx` con `src/modules/export/personalized-questionnaire-docx.ts`
   (registrado como `Export` con `kind: 'CUESTIONARIO_PERSONALIZADO'`, descargable por la
   misma ruta segura que el resto de las exportaciones) desde un botón en
   `/diagnosticos/[id]/cuestionario`.
-- Toda ejecución (proveedor mock o real) queda registrada en `AIExecution` igual que el
-  análisis de transcripciones.
+- Toda la generación (proveedor mock, o todas las llamadas de planificación + módulos del
+  proveedor real) queda registrada como una sola ejecución en `AIExecution`, igual que el
+  análisis de transcripciones — la granularidad de auditoría es "una generación de
+  cuestionario", no "una llamada HTTP".
 
 ## Validación anti-alucinación
 

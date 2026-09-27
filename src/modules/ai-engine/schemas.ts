@@ -115,6 +115,60 @@ export type PersonalizedQuestionEntry = z.infer<typeof personalizedQuestionEntry
 export type PersonalizedQuestionnaireModule = z.infer<typeof personalizedQuestionnaireModuleSchema>;
 export type PersonalizedQuestionnaireOutput = z.infer<typeof personalizedQuestionnaireOutputSchema>;
 
+// ---------------------------------------------------------------------------
+// Generación en dos fases (planificación + contenido por módulo).
+//
+// El número y la profundidad de los módulos no puede fijarse de antemano: debe
+// surgir de lo que la reunión y el sitio web de CADA organización realmente
+// ameriten (una organización no es "estándar"). Por eso la generación real se
+// hace en dos pasos: (1) una llamada de "planificación" que decide cuántos
+// módulos hacen falta y de qué trata cada uno, sin rango fijo; (2) una llamada
+// de contenido POR MÓDULO que redacta sus preguntas con un presupuesto de
+// tokens propio, evitando el techo de truncamiento de una sola llamada
+// monolítica. Ver `generatePersonalizedQuestionnaire` en `providers/live.ts`.
+
+export const personalizedQuestionnaireModulePlanSchema = z.object({
+  title: z.string().min(1),
+  areaResponsible: z.string().min(1),
+  phase: z.enum(['FASE_1_ESENCIAL', 'FASE_2_AMPLIACION']),
+  focus: z.string().min(1),
+});
+
+export const personalizedQuestionnairePlanSchema = z.object({
+  coverPage: z.object({
+    title: z.string().min(1),
+    subtitle: z.string().min(1),
+    lawReference: z.string().min(1),
+    preparedFor: z.string().min(1),
+    contacts: z.string().min(1),
+  }),
+  presentation: z.array(z.string().min(1)).min(1),
+  howToRespond: z.array(z.string().min(1)).min(1),
+  confidentialityNote: z.string().min(1),
+  glossary: z.array(z.object({ term: z.string().min(1), definition: z.string().min(1) })),
+  documentChecklist: z.array(z.string().min(1)),
+  closingNote: z.string().min(1),
+  modulePlans: z.array(personalizedQuestionnaireModulePlanSchema).min(1),
+});
+
+export type PersonalizedQuestionnaireModulePlan = z.infer<typeof personalizedQuestionnaireModulePlanSchema>;
+export type PersonalizedQuestionnairePlan = z.infer<typeof personalizedQuestionnairePlanSchema>;
+
+export const personalizedQuestionEntryDraftSchema = z.object({
+  text: z.string().min(1),
+  type: z.enum(['abierta', 'cerrada']),
+  options: z.array(z.string().min(1)).optional(),
+  allowsDetail: z.boolean().optional(),
+});
+
+export const personalizedQuestionnaireModuleContentSchema = z.object({
+  intro: z.string().min(1),
+  questions: z.array(personalizedQuestionEntryDraftSchema).min(1),
+});
+
+export type PersonalizedQuestionEntryDraft = z.infer<typeof personalizedQuestionEntryDraftSchema>;
+export type PersonalizedQuestionnaireModuleContent = z.infer<typeof personalizedQuestionnaireModuleContentSchema>;
+
 /**
  * Chequeo mínimo de forma: cada pregunta abierta debe tener forma
  * interrogativa (nunca una afirmación de hecho no confirmado), y cada
