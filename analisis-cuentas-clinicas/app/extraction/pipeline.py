@@ -51,9 +51,14 @@ def procesar_documento(ruta: str, tipo_documento: str = "cuenta_clinica") -> dic
     else:
         campos_globales = fe.extraer_campos_globales(extraido["texto"])
         if extrae_items:
+            filas_por_coordenadas = extraido.get("filas_por_coordenadas") or []
             if extraido["metodo"] in METODOS_POR_PAGINA and extraido["paginas"]:
                 for num_pagina, texto_pagina in enumerate(extraido["paginas"], start=1):
                     items_pagina = fe.extraer_items_columnar_por_prestador(texto_pagina, num_pagina)
+                    if not items_pagina and num_pagina <= len(filas_por_coordenadas):
+                        items_pagina = fe.extraer_items_filas_coordenadas(
+                            filas_por_coordenadas[num_pagina - 1], num_pagina
+                        )
                     if not items_pagina:
                         items_pagina = fe.extraer_items_desde_texto(texto_pagina, extraido["metodo"], num_pagina)
                     items_crudos.extend(items_pagina)

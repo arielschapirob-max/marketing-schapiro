@@ -17,13 +17,22 @@ def extraer_documento(ruta: str) -> dict:
     if ext not in EXTENSIONES_SOPORTADAS:
         raise ValueError(f"Extensión no soportada: {ext}")
 
-    resultado = {"texto": "", "tablas": [], "hojas": {}, "paginas": [], "metodo": "", "extension": ext}
+    resultado = {
+        "texto": "",
+        "tablas": [],
+        "hojas": {},
+        "paginas": [],
+        "filas_por_coordenadas": [],
+        "metodo": "",
+        "extension": ext,
+    }
 
     if ext == ".pdf":
         texto, tiene_texto, paginas = pdf_text.extraer_texto_pdf(ruta)
         if tiene_texto and len(texto.strip()) > UMBRAL_TEXTO_PDF:
             resultado["texto"] = texto
             resultado["paginas"] = paginas
+            resultado["filas_por_coordenadas"] = pdf_text.extraer_filas_pdf_por_coordenadas(ruta)
             resultado["metodo"] = "pdf_texto"
         else:
             texto_ocr, paginas_ocr = pdf_ocr.extraer_texto_pdf_ocr(ruta)

@@ -313,6 +313,187 @@ def extraer_items_columnar_por_prestador(texto: str, pagina: int | None = None) 
     return items
 
 
+PATRON_CODIGO_PUNTEADO = re.compile(r"^\d{2}\.\d{2}\.\d{3}$")
+PALABRAS_MOTIVO_SIN_ARANCEL = {"NO", "ARANCELADO", "USO", "PERSONAL"}
+
+
+def _monto_con_coma_completo(valor: str) -> bool:
+    partes = valor.split(",")
+    return len(partes) == 1 or len(partes[-1]) == 3
+
+
+def _parsear_monto_con_coma(valor: str) -> float:
+    return float(valor.replace(",", ""))
+
+
+def _leer_monto_con_cola(principal: list[str], idx: int, cola: list[str]) -> tuple[str | None, int]:
+    """Lee un valor "$ N,NNN,NNN" que puede venir cortado por un salto de línea.
+
+    Cuando el fragmento que completa el monto no aparece inmediatamente
+    después del '$' en ``principal`` (porque el PDF lo imprimió en otra
+    línea), se toma de ``cola`` — los tokens que quedaron después del cierre
+    natural de la fila (ver ``_dividir_principal_cola``), en el mismo orden
+    en que aparecieron en el documento.
+    """
+    if idx >= len(principal) or principal[idx] != "$":
+        return None, idx
+    idx += 1
+    if idx < len(principal) and re.match(r"^[\d,]+$", principal[idx]):
+        valor = principal[idx]
+        idx += 1
+    elif cola:
+        valor = cola.pop(0)
+    else:
+        return None, idx
+    while not _monto_con_coma_completo(valor):
+        if idx < len(principal) and re.match(r"^\d+$", principal[idx]):
+            valor += principal[idx]
+            idx += 1
+        elif cola and re.match(r"^\d+$", cola[0]):
+            valor += cola.pop(0)
+        else:
+            break
+    return valor, idx
+
+
+def _dividir_principal_cola(fila: list[str]) -> tuple[list[str], list[str]]:
+    """Separa una fila en su contenido principal y la "cola" de fragmentos.
+
+    El literal ``'Bono'`` + número de bono + bandera (NO/SI) marca el cierre
+    natural de una fila codificada; cualquier token que haya quedado después
+    de eso al fusionar quiebres de línea (ver
+    ``pdf_text._filas_pagina_por_coordenadas``) es un fragmento de un monto o
+    porcentaje que no alcanzó a completarse antes del cierre.
+    """
+    try:
+        i_bono = fila.index("Bono")
+    except ValueError:
+        return fila, []
+    fin = i_bono + 3
+    if fin > len(fila):
+        return fila, []
+    return fila[:fin], fila[fin:]
+
+
+def _parsear_fila_codificada(fila: list[str], pagina: int | None) -> dict | None:
+    principal, cola = _dividir_principal_cola(fila)
+    idx = 0
+    if len(principal) < 5:
+        return None
+    cantidad = principal[idx]
+    idx += 1
+    codigo = principal[idx]
+    idx += 1
+    idx += 1  # código/grupo auxiliar, no se usa
+    descripcion_tokens = []
+    while idx < len(principal) and not re.match(r"^\d+$", principal[idx]):
+        descripcion_tokens.append(principal[idx])
+        idx += 1
+    if idx >= len(principal) or not descripcion_tokens:
+        return None
+    descripcion = " ".join(descripcion_tokens)
+    idx += 1  # segundo auxiliar (grupo/edad), no se usa
+
+    valor_prestacion, idx = _leer_monto_con_cola(principal, idx, cola)
+    _duplicado, idx = _leer_monto_con_cola(principal, idx, cola)
+    bonificado, idx = _leer_monto_con_cola(principal, idx, cola)
+    if valor_prestacion is None or bonificado is None:
+        return None
+
+    cobrado = _parsear_monto_con_coma(valor_prestacion)
+    valor_bonificado = _parsear_monto_con_coma(bonificado)
+    return {
+        "codigo_prestacion": codigo,
+        "descripcion": descripcion,
+        "cantidad": float(cantidad) if cantidad.isdigit() else None,
+        "valor_cobrado": cobrado,
+        "valor_bonificado": valor_bonificado,
+        "monto_no_cubierto": round(cobrado - valor_bonificado, 2),
+        "pagina_origen": pagina,
+        "confianza": {
+            "codigo_prestacion": "alto",
+            "descripcion": "medio",
+            "valor_cobrado": "medio",
+            "valor_bonificado": "medio",
+        },
+    }
+
+
+def _parsear_fila_sin_arancel(fila: list[str], pagina: int | None) -> dict | None:
+    idx = 0
+    if len(fila) < 3:
+        return None
+    cantidad = fila[idx]
+    idx += 1
+    descripcion_tokens = []
+    while idx < len(fila) and fila[idx] != "$":
+        descripcion_tokens.append(fila[idx])
+        idx += 1
+    if idx >= len(fila) or not descripcion_tokens:
+        return None
+    descripcion = " ".join(descripcion_tokens)
+    valor, idx = _leer_monto_con_cola(fila, idx, [])
+    if valor is None:
+        return None
+    motivo = [t for t in fila[idx:] if t.upper() in PALABRAS_MOTIVO_SIN_ARANCEL]
+    cobrado = _parsear_monto_con_coma(valor)
+    return {
+        "codigo_prestacion": None,
+        "descripcion": descripcion,
+        "cantidad": float(cantidad) if cantidad.isdigit() else None,
+        "valor_cobrado": cobrado,
+        "valor_bonificado": 0.0,
+        "monto_no_cubierto": cobrado,
+        "glosa": " ".join(motivo) or None,
+        "pagina_origen": pagina,
+        "confianza": {
+            "codigo_prestacion": "bajo",
+            "descripcion": "medio",
+            "valor_cobrado": "medio",
+        },
+    }
+
+
+def extraer_items_filas_coordenadas(filas: list[list[str]], pagina: int | None = None) -> list[dict]:
+    """Extrae ítems de filas ya reconstruidas por coordenada (ver ``pdf_text``).
+
+    Reconoce dos formas de fila en liquidaciones reales con código de
+    prestación puntuado (ej. Cruz Blanca, "17.03.006"):
+
+    - Codificada: cantidad, código, descripción, y una serie de montos
+      (valor prestación, bonificación, deducible/copago...). Solo se extraen
+      con confianza los tres primeros montos (valor cobrado y bonificado);
+      el resto de las columnas (deducible aplicado, copago, reembolso) no se
+      informan porque su atribución exacta cuando el ítem tiene bonificación
+      parcial no se pudo determinar de forma confiable — mejor omitir un
+      dato que informar un monto de copago o deducible potencialmente
+      equivocado en un documento de uso legal.
+    - Sin arancel: cantidad, descripción, un único monto, y la causal ("NO
+      ARANCELADO", "USO PERSONAL"). No tienen código de prestación.
+
+    Si ninguna fila calza con estos patrones (ej. liquidaciones con el
+    formato simple de una prestación por línea, como las de muestra), se
+    devuelve una lista vacía y el llamador recurre a otra heurística.
+    """
+    items = []
+    for fila in filas:
+        if len(fila) < 2:
+            continue
+        if re.match(r"^\d{1,3}$", fila[0]) and PATRON_CODIGO_PUNTEADO.match(fila[1]):
+            item = _parsear_fila_codificada(fila, pagina)
+        elif (
+            re.match(r"^\d{1,3}$", fila[0])
+            and "$" in fila
+            and not re.match(r"^[\d.,%$-]+$", fila[1])
+        ):
+            item = _parsear_fila_sin_arancel(fila, pagina)
+        else:
+            item = None
+        if item:
+            items.append(item)
+    return items
+
+
 def mapear_encabezados(encabezados: list[str]) -> dict[int, str]:
     mapeo = {}
     for idx, encabezado in enumerate(encabezados):
