@@ -20,6 +20,7 @@ class Settings:
     poppler_path: str = os.getenv("POPPLER_PATH", "")
     max_file_size_mb: int = int(os.getenv("MAX_FILE_SIZE_MB", "25"))
     enable_external_ai: bool = os.getenv("ENABLE_EXTERNAL_AI", "false").lower() == "true"
+    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     current_user: str = os.getenv("CURRENT_USER", "abogado")
 
     @property

@@ -22,8 +22,11 @@ st.write(f"Uso de IA externa habilitado: **{'Sí' if settings.enable_external_ai
 if settings.enable_external_ai:
     st.warning(
         "El uso de servicios de IA externos está habilitado por configuración (ENABLE_EXTERNAL_AI=true). "
-        "Verifique que exista autorización expresa antes de enviar cualquier documento a un servicio de terceros. "
-        "La aplicación, por diseño, no envía documentos a servicios externos de forma automática."
+        "Actualmente esto habilita la verificación del deducible CAEC con IA en la pantalla de "
+        "Hallazgos (envía a la API de Anthropic los datos que el abogado ingrese ahí: cotización "
+        "pactada, y código/descripción/montos de los ítems de ese cálculo — nunca el resto de la "
+        "cuenta ni documentos completos). Ningún otro flujo de la aplicación envía datos a servicios "
+        "externos de forma automática."
     )
 else:
     st.success(

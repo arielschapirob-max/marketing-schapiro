@@ -21,10 +21,16 @@ st.caption(
 )
 
 with st.expander("Aviso de datos sensibles y consentimiento", expanded=True):
+    aviso_ia = (
+        " El análisis asistido por IA externa está habilitado por configuración (ENABLE_EXTERNAL_AI=true): "
+        "al usar la verificación con IA en la pantalla de Hallazgos, los datos que usted ingrese ahí "
+        "(cotización pactada, montos de los ítems) se envían a la API de Anthropic."
+        if settings.enable_external_ai
+        else " El procesamiento es local y no se envían documentos a servicios externos."
+    )
     st.warning(
         "Esta herramienta procesa datos personales sensibles (datos de salud) de conformidad con la normativa "
-        "vigente de protección de datos personales. El procesamiento es local y no se envían documentos a "
-        "servicios externos, salvo autorización expresa por caso. Al continuar, usted declara contar con la "
+        "vigente de protección de datos personales." + aviso_ia + " Al continuar, usted declara contar con la "
         "autorización correspondiente para el tratamiento de estos antecedentes."
     )
 

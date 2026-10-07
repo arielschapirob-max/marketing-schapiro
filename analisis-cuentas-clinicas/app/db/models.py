@@ -115,6 +115,8 @@ class Hallazgo(Base):
     recomendacion_interna = Column(Text, nullable=True)
     estado = Column(String, default=EstadoHallazgo.PENDIENTE.value)
     fecha_creacion = Column(DateTime, default=dt.datetime.utcnow)
+    verificacion_ia_texto = Column(Text, nullable=True)
+    verificacion_ia_fecha = Column(DateTime, nullable=True)
 
     caso = relationship("Caso", back_populates="hallazgos")
     item = relationship("ItemCuenta")
